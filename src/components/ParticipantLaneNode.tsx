@@ -52,14 +52,14 @@ function ParticipantLaneNodeComponent({
         style={{
           width,
           height: PARTICIPANT_HEADER_HEIGHT,
-          background: '#ffffff',
-          border: '2px solid #e5e7eb',
+          background: 'var(--sd-surface, #ffffff)',
+          border: '2px solid var(--sd-border, #e5e7eb)',
           borderRadius: 8,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          boxShadow: '0 1px 3px var(--sd-shadow, rgba(0,0,0,0.1))',
           position: 'relative',
         }}
       >
@@ -68,7 +68,7 @@ function ParticipantLaneNodeComponent({
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#111827',
+            color: 'var(--sd-text, #111827)',
             textAlign: 'center',
             lineHeight: 1.3,
             padding: '0 8px',
@@ -80,7 +80,7 @@ function ParticipantLaneNodeComponent({
           <div
             style={{
               fontSize: 11,
-              color: '#6b7280',
+              color: 'var(--sd-text-muted, #6b7280)',
               marginTop: 2,
             }}
           >
@@ -98,7 +98,7 @@ function ParticipantLaneNodeComponent({
           width: 2,
           height: 800,
           marginLeft: -1,
-          borderLeft: `2px dashed #d1d5db`,
+          borderLeft: `2px dashed var(--sd-border, #d1d5db)`,
           transform: 'translateX(0)',
         }}
       />

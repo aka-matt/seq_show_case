@@ -15,6 +15,7 @@ export interface SelfMessageEdgeData {
   messageKind: 'sync' | 'async' | 'return';
   messageY: number;
   selfCallWidth: number;
+  status?: 'normal' | 'success' | 'warning' | 'error' | 'muted';
 }
 
 function SelfMessageEdgeComponent({
@@ -24,7 +25,7 @@ function SelfMessageEdgeComponent({
 }: EdgeProps): React.ReactElement {
   // Cast data to our expected type
   const typedData = data as SelfMessageEdgeData | undefined;
-  const { label, messageKind, messageY, selfCallWidth } = typedData ?? {};
+  const { label, messageKind, messageY, selfCallWidth, status = 'normal' } = typedData ?? {};
   const msgY = messageY ?? 0;
   const loopWidth = selfCallWidth ?? 54;
 
@@ -50,6 +51,26 @@ function SelfMessageEdgeComponent({
     ? `url(#self-arrowclosed)`
     : `url(#self-arrow)`;
 
+  // Determine line color based on status
+  const getLineColor = () => {
+    if (selected) return 'var(--sd-accent)';
+    switch (status) {
+      case 'success':
+        return 'var(--sd-success)';
+      case 'warning':
+        return 'var(--sd-warning)';
+      case 'error':
+        return 'var(--sd-error)';
+      case 'muted':
+        return 'var(--sd-text-muted)';
+      default:
+        return 'var(--sd-line)';
+    }
+  };
+
+  const lineColor = getLineColor();
+  const lineWidth = selected ? 2.5 : 2;
+
   return (
     <>
       {/* SVG markers definition */}
@@ -64,7 +85,7 @@ function SelfMessageEdgeComponent({
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6 z" fill="#374151" />
+            <path d="M0,0 L0,12 L12,6 z" fill={lineColor} />
           </marker>
           <marker
             id="self-arrow"
@@ -75,7 +96,7 @@ function SelfMessageEdgeComponent({
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke="#374151" strokeWidth="1.5" />
+            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
           </marker>
         </defs>
       </svg>
@@ -85,8 +106,8 @@ function SelfMessageEdgeComponent({
         id={id}
         path={loopPath}
         style={{
-          stroke: selected ? '#2563eb' : '#374151',
-          strokeWidth: selected ? 2.5 : 2,
+          stroke: lineColor,
+          strokeWidth: lineWidth,
           strokeDasharray,
         }}
         markerEnd={markerEnd}
@@ -100,14 +121,14 @@ function SelfMessageEdgeComponent({
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${loopWidth / 2}px, ${msgY + 36}px)`,
               pointerEvents: 'all',
-              background: '#ffffff',
+              background: 'var(--sd-surface)',
               padding: '2px 8px',
               borderRadius: 4,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--sd-border)',
               fontSize: 12,
-              color: '#374151',
+              color: 'var(--sd-text)',
               whiteSpace: 'nowrap',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              boxShadow: '0 1px 2px var(--sd-shadow)',
             }}
           >
             {label}

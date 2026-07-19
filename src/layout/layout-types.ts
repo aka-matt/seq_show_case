@@ -89,6 +89,8 @@ export interface LayoutMessage {
   /** Width of self-call loop */
   selfCallWidth: number;
   estimatedWidth: number;
+  /** Message status for visual styling */
+  status?: "normal" | "success" | "warning" | "error" | "muted";
 }
 
 // ---------------------------------------------------------------------------

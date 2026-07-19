@@ -200,6 +200,7 @@ function calculateMessagesAndNotes(
         isSelfCall: event.isSelfCall,
         selfCallWidth: event.isSelfCall ? DEFAULT_LAYOUT.selfMessageWidth : 0,
         estimatedWidth: event.estimatedWidth,
+        ...(event.status !== undefined && { status: event.status }),
       };
       messages.push(msg);
     } else if (event.type === "note") {

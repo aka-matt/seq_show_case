@@ -14,18 +14,18 @@ export interface NoteOverlayProps {
 }
 
 // ---------------------------------------------------------------------------
-// Tone colors
+// Tone colors (CSS variable based)
 // ---------------------------------------------------------------------------
 
 const TONE_STYLES: Record<
   LayoutNote['tone'],
-  { bg: string; border: string; text: string }
+  { bgVar: string; borderVar: string; textVar: string }
 > = {
-  info: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
-  success: { bg: '#f0fdf4', border: '#22c55e', text: '#166534' },
-  warning: { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
-  error: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },
-  neutral: { bg: '#f9fafb', border: '#6b7280', text: '#374151' },
+  info: { bgVar: '--sd-accent-soft', borderVar: '--sd-accent', textVar: '--sd-accent' },
+  success: { bgVar: '--sd-success', borderVar: '--sd-success', textVar: '--sd-success' },
+  warning: { bgVar: '--sd-warning', borderVar: '--sd-warning', textVar: '--sd-warning' },
+  error: { bgVar: '--sd-error', borderVar: '--sd-error', textVar: '--sd-error' },
+  neutral: { bgVar: '--sd-surface-muted', borderVar: '--sd-border', textVar: '--sd-text' },
 };
 
 function NoteOverlayComponent({
@@ -63,20 +63,20 @@ function NoteOverlayComponent({
                 top: note.y,
                 width: note.width,
                 minHeight: note.height,
-                backgroundColor: tone.bg,
-                border: `1px solid ${tone.border}`,
+                backgroundColor: `var(${tone.bgVar})`,
+                border: `1px solid var(${tone.borderVar})`,
                 borderRadius: 6,
                 padding: '6px 10px',
                 boxSizing: 'border-box',
                 pointerEvents: 'auto',
                 cursor: 'pointer',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                boxShadow: '0 1px 3px var(--sd-shadow)',
               }}
             >
               <span
                 style={{
                   fontSize: 12,
-                  color: tone.text,
+                  color: `var(${tone.textVar})`,
                   lineHeight: 1.4,
                   wordBreak: 'break-word',
                 }}

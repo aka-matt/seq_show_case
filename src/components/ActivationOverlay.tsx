@@ -10,12 +10,6 @@ export interface ActivationOverlayProps {
   activations: LayoutActivation[];
 }
 
-/**
- * Colors for activation bars - using a subtle blue that stands out from background
- */
-const ACTIVATION_COLOR = '#3b82f6';
-const ACTIVATIONBg_COLOR = 'rgba(59, 130, 246, 0.15)';
-
 function ActivationOverlayComponent({
   activations,
 }: ActivationOverlayProps): React.ReactElement | null {
@@ -43,9 +37,9 @@ function ActivationOverlayComponent({
               top: activation.y,
               width: activation.width,
               height: activation.height,
-              backgroundColor: ACTIVATIONBg_COLOR,
-              borderLeft: `2px solid ${ACTIVATION_COLOR}`,
-              borderRight: `2px solid ${ACTIVATION_COLOR}`,
+              backgroundColor: 'var(--sd-accent-soft)',
+              borderLeft: '2px solid var(--sd-accent)',
+              borderRight: '2px solid var(--sd-accent)',
               boxSizing: 'border-box',
             }}
           />

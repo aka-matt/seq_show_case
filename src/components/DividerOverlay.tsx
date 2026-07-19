@@ -37,7 +37,7 @@ function DividerOverlayComponent({
               top: divider.y,
               width: divider.width,
               height: 1,
-              backgroundColor: '#e5e7eb',
+              backgroundColor: 'var(--sd-border)',
               boxSizing: 'border-box',
             }}
           >
@@ -48,8 +48,8 @@ function DividerOverlayComponent({
                   left: 8,
                   top: -8,
                   fontSize: 11,
-                  color: '#6b7280',
-                  backgroundColor: '#f9fafb',
+                  color: 'var(--sd-text-muted)',
+                  backgroundColor: 'var(--sd-canvas)',
                   padding: '0 4px',
                   whiteSpace: 'nowrap',
                 }}

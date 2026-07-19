@@ -17,6 +17,7 @@ export interface SequenceMessageEdgeData {
   messageKind: 'sync' | 'async' | 'return';
   arrowHeadType: 'arrowclosed' | 'arrow';
   messageY: number;
+  status?: 'normal' | 'success' | 'warning' | 'error' | 'muted';
 }
 
 function SequenceMessageEdgeComponent({
@@ -32,7 +33,7 @@ function SequenceMessageEdgeComponent({
 }: EdgeProps): React.ReactElement {
   // Cast data to our expected type
   const typedData = data as SequenceMessageEdgeData | undefined;
-  const { label, messageKind, arrowHeadType, messageY } = typedData ?? {};
+  const { label, messageKind, arrowHeadType, messageY, status = 'normal' } = typedData ?? {};
   const msgY = messageY ?? sourceY;
 
   // Calculate bezier path
@@ -54,6 +55,26 @@ function SequenceMessageEdgeComponent({
     ? `url(#arrowclosed-${messageKind})`
     : `url(#arrow-${messageKind})`;
 
+  // Determine line color based on status
+  const getLineColor = () => {
+    if (selected) return 'var(--sd-accent, #2563eb)';
+    switch (status) {
+      case 'success':
+        return 'var(--sd-success, #059669)';
+      case 'warning':
+        return 'var(--sd-warning, #d97706)';
+      case 'error':
+        return 'var(--sd-error, #dc2626)';
+      case 'muted':
+        return 'var(--sd-text-muted, #6b7280)';
+      default:
+        return 'var(--sd-line, #374151)';
+    }
+  };
+
+  const lineColor = getLineColor();
+  const lineWidth = selected ? 2.5 : 2;
+
   return (
     <>
       {/* SVG markers definition */}
@@ -68,7 +89,7 @@ function SequenceMessageEdgeComponent({
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6 z" fill="#374151" />
+            <path d="M0,0 L0,12 L12,6 z" fill={lineColor} />
           </marker>
           <marker
             id={`arrow-sync`}
@@ -79,7 +100,7 @@ function SequenceMessageEdgeComponent({
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke="#374151" strokeWidth="1.5" />
+            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
           </marker>
           <marker
             id={`arrowclosed-async`}
@@ -90,7 +111,7 @@ function SequenceMessageEdgeComponent({
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6 z" fill="none" stroke="#374151" strokeWidth="1.5" />
+            <path d="M0,0 L0,12 L12,6 z" fill="none" stroke={lineColor} strokeWidth="1.5" />
           </marker>
           <marker
             id={`arrow-async`}
@@ -101,7 +122,7 @@ function SequenceMessageEdgeComponent({
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke="#374151" strokeWidth="1.5" />
+            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
           </marker>
           <marker
             id={`arrowclosed-return`}
@@ -112,7 +133,7 @@ function SequenceMessageEdgeComponent({
             orient="auto-start-reverse"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6 z" fill="none" stroke="#374151" strokeWidth="1.5" />
+            <path d="M0,0 L0,12 L12,6 z" fill="none" stroke={lineColor} strokeWidth="1.5" />
           </marker>
           <marker
             id={`arrow-return`}
@@ -123,7 +144,7 @@ function SequenceMessageEdgeComponent({
             orient="auto-start-reverse"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke="#374151" strokeWidth="1.5" />
+            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
           </marker>
         </defs>
       </svg>
@@ -133,8 +154,8 @@ function SequenceMessageEdgeComponent({
         id={id}
         path={edgePath}
         style={{
-          stroke: selected ? '#2563eb' : '#374151',
-          strokeWidth: selected ? 2.5 : 2,
+          stroke: lineColor,
+          strokeWidth: lineWidth,
           strokeDasharray,
         }}
         markerEnd={markerEnd}
@@ -148,14 +169,14 @@ function SequenceMessageEdgeComponent({
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px, ${msgY}px)`,
               pointerEvents: 'all',
-              background: '#ffffff',
+              background: 'var(--sd-surface, #ffffff)',
               padding: '2px 8px',
               borderRadius: 4,
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--sd-border, #e5e7eb)',
               fontSize: 12,
-              color: '#374151',
+              color: 'var(--sd-text, #374151)',
               whiteSpace: 'nowrap',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              boxShadow: '0 1px 2px var(--sd-shadow, rgba(0,0,0,0.05))',
             }}
           >
             {label}

@@ -296,7 +296,7 @@ function normalizeMessageEvent(
     isSelfCall: event.from === event.to,
     estimatedWidth,
     ...(event.number !== undefined && { number: event.number }),
-    ...(event.status !== undefined && { status: event.status }),
+    status: event.status ?? "normal",
     ...(event.tooltip !== undefined && { tooltip: event.tooltip }),
     ...(event.metadata !== undefined && { metadata: event.metadata }),
   };

@@ -29,6 +29,7 @@ export function createEdges(layoutResult: LayoutResult): Edge[] {
         messageKind: message.messageKind,
         messageY: message.y,
         selfCallWidth: message.selfCallWidth,
+        ...(message.status !== undefined && { status: message.status }),
       };
 
       return {
@@ -53,6 +54,7 @@ export function createEdges(layoutResult: LayoutResult): Edge[] {
       messageKind: message.messageKind,
       arrowHeadType: message.messageKind === 'sync' ? 'arrowclosed' : 'arrow',
       messageY: message.y,
+      ...(message.status !== undefined && { status: message.status }),
     };
 
     return {

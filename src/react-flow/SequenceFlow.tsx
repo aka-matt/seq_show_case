@@ -161,8 +161,8 @@ function SequenceFlowComponent({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f9fafb',
-          color: '#6b7280',
+          background: 'var(--sd-canvas, #f9fafb)',
+          color: 'var(--sd-text-muted, #6b7280)',
           fontFamily: 'system-ui, sans-serif',
           fontSize: 14,
         }}
@@ -181,8 +181,8 @@ function SequenceFlowComponent({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f9fafb',
-          color: '#6b7280',
+          background: 'var(--sd-canvas, #f9fafb)',
+          color: 'var(--sd-text-muted, #6b7280)',
           fontFamily: 'system-ui, sans-serif',
           fontSize: 14,
         }}
@@ -206,9 +206,9 @@ function SequenceFlowComponent({
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       {...flowConfig}
-      style={{ background: config.showBackground ? '#f9fafb' : 'transparent' }}
+      style={{ background: config.showBackground ? 'var(--sd-canvas, #f9fafb)' : 'transparent' }}
     >
-      {config.showBackground && <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#e5e7eb" />}
+      {config.showBackground && <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--sd-border, #e5e7eb)" />}
       <SequenceOverlays layoutResult={layoutResult} />
       {config.controls && (
         <Controls
@@ -219,11 +219,11 @@ function SequenceFlowComponent({
       )}
       {config.minimap && (
         <MiniMap
-          nodeColor="#ffffff"
+          nodeColor="var(--sd-surface, #ffffff)"
           nodeStrokeWidth={2}
           maskColor="rgba(0, 0, 0, 0.1)"
           position="bottom-left"
-          style={{ background: '#ffffff', border: '1px solid #e5e7eb' }}
+          style={{ background: 'var(--sd-surface, #ffffff)', border: '1px solid var(--sd-border, #e5e7eb)' }}
         />
       )}
     </ReactFlow>

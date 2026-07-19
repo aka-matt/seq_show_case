@@ -37,6 +37,8 @@ export interface NormalizedMessageEvent extends MessageEvent {
   isSelfCall: boolean;
   /** Estimated visual width in pixels */
   estimatedWidth: number;
+  /** Message status for visual styling */
+  status?: "normal" | "success" | "warning" | "error" | "muted";
 }
 
 export interface NormalizedNoteEvent extends NoteEvent {

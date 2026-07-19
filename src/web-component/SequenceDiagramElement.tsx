@@ -38,6 +38,7 @@ import {
   type PaletteName,
   type SequenceDiagramConfig,
 } from './attributes';
+import { applyTheme } from '../theme';
 import {
   createSequenceReadyDispatcher,
   createSequenceRenderedDispatcher,
@@ -546,6 +547,13 @@ export class SequenceDiagramElement extends HTMLElement {
     this.style.width = '100%';
     this.style.height = this._height;
     this.style.contain = 'layout paint style';
+
+    // Apply theme tokens as CSS variables
+    applyTheme({
+      host: this,
+      mode: this._theme,
+      palette: this._palette,
+    });
   }
 
   /**
@@ -735,8 +743,8 @@ export class SequenceDiagramElement extends HTMLElement {
           justifyContent: 'center',
           padding: 24,
           fontFamily: 'system-ui, sans-serif',
-          background: '#fef2f2',
-          color: '#991b1b',
+          background: 'var(--sd-surface, #fef2f2)',
+          color: 'var(--sd-error, #991b1b)',
           boxSizing: 'border-box',
         }}
       >
@@ -787,8 +795,8 @@ export class SequenceDiagramElement extends HTMLElement {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f9fafb',
-          color: '#6b7280',
+          background: 'var(--sd-canvas, #f9fafb)',
+          color: 'var(--sd-text-muted, #6b7280)',
           fontFamily: 'system-ui, sans-serif',
           fontSize: 14,
           boxSizing: 'border-box',
