@@ -8,9 +8,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/sequence-diagram.es.js",
-      "require": "./dist/sequence-diagram.iife.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/sequence-diagram.iife.js"
     }
   },
   "files": [
