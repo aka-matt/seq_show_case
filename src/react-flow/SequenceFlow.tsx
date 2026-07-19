@@ -22,6 +22,7 @@ import { createNodes } from './createNodes';
 import { createEdges } from './createEdges';
 import { nodeTypes } from './nodeTypes';
 import { edgeTypes } from './edgeTypes';
+import { SequenceOverlays } from '../components/SequenceOverlays';
 
 // React Flow configuration per spec section 5.1
 const FLOW_CONFIG = {
@@ -167,6 +168,7 @@ function SequenceFlowComponent({
       style={{ background: '#f9fafb' }}
     >
       <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#e5e7eb" />
+      <SequenceOverlays layoutResult={layoutResult} />
       <Controls
         showZoom={true}
         showFitView={true}
