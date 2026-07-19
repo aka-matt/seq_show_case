@@ -205,8 +205,9 @@ describe("Layout Engine", () => {
       const msg = result.messages[0]!;
       const p0 = result.participants[0]!;
       const p1 = result.participants[1]!;
-      expect(msg.fromX).toBe(p0.x + p0.width);
-      expect(msg.toX).toBe(p1.x);
+      // Endpoints are lifeline centres, not header-box edges.
+      expect(msg.fromX).toBe(p0.x + p0.width / 2);
+      expect(msg.toX).toBe(p1.x + p1.width / 2);
     });
 
     it("should mark self-call messages correctly", () => {

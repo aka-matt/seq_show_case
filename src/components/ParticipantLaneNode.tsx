@@ -2,17 +2,11 @@
  * Participant Lane Node - custom React Flow node
  *
  * Renders a participant header (box) at the top and a vertical dashed lifeline
- * extending down through the event area. Per spec section 5.2, the node
- * dynamically generates one invisible handle per message that touches the
- * participant, using the stable ID format:
+ * through the centre of the node. Per spec section 5.2, the node dynamically
+ * generates one invisible handle per message that touches the participant.
  *
- *   - msg:<messageId>:left    — regular message, this participant's left side
- *   - msg:<messageId>:right   — regular message, this participant's right side
- *   - self:<messageId>:out    — self-call, this participant's right side
- *   - self:<messageId>:in     — self-call, this participant's left side
- *
- * Handles are positioned at the absolute Y of their corresponding message so
- * the arrow leaves/arrives at the correct row regardless of direction.
+ * Handles sit on the LIFELINE (horizontal centre of the node) at each message's
+ * Y so edges connect to the vertical dashed line, not the header box edges.
  */
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
@@ -20,16 +14,28 @@ import type { LayoutParticipant } from '../layout/layout-types';
 import type { ParticipantHandle } from '../react-flow/createNodes';
 
 const PARTICIPANT_HEADER_HEIGHT = 68;
+const HANDLE_SIZE = 8;
 
-/** Shared invisible styling for all dynamic handles. */
+/**
+ * Shared invisible styling for all dynamic handles.
+ * React Flow's Position.Left/Right classes set `left:0`/`right:0` and a
+ * translate — we must zero those out so the lifeline-centre left/top wins.
+ */
 const HANDLE_BASE_STYLE: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
-  width: 8,
-  height: 8,
+  width: HANDLE_SIZE,
+  height: HANDLE_SIZE,
+  minWidth: HANDLE_SIZE,
+  minHeight: HANDLE_SIZE,
   opacity: 0,
-  // Absolute positioning so we can place each handle at its message Y.
+  // Absolute so we can place each handle on the lifeline at its message Y.
   position: 'absolute',
+  // Kill RF Position.Left/Right edge anchors + default translate.
+  transform: 'none',
+  right: 'auto',
+  bottom: 'auto',
+  margin: 0,
 };
 
 export interface ParticipantLaneNodeData {
@@ -37,36 +43,46 @@ export interface ParticipantLaneNodeData {
   participant: LayoutParticipant;
   /** Handles for every message that touches this participant, pre-computed by createNodes. */
   handles: ParticipantHandle[];
-  /** Total canvas height — used to extend the lifeline down to the bottom of the diagram. */
+  /** Total canvas height — used to size the node and extend the lifeline. */
   totalHeight: number;
 }
 
 function ParticipantLaneNodeComponent({
   data,
 }: NodeProps): React.ReactElement {
-  // Cast data to our expected type — React Flow passes custom data through.
   const typedData = data as ParticipantLaneNodeData;
   const { participant, handles, totalHeight } = typedData;
   const width = participant.width;
+  const height = Math.max(totalHeight, PARTICIPANT_HEADER_HEIGHT);
 
-  // The header sits at the top of the node; the lifeline spans from just below
-  // the header down to the bottom of the diagram.
+  // Lifeline is the vertical centre of the node.
+  const lifelineX = width / 2;
   const lifelineTop = PARTICIPANT_HEADER_HEIGHT;
-  const lifelineHeight = Math.max(totalHeight - lifelineTop, 0);
+  const lifelineHeight = Math.max(height - lifelineTop, 0);
 
   return (
-    <>
-      {/* Per-message handles, rendered first so they sit behind the header box. */}
+    // Explicit size so React Flow's measurement / fitView includes the full lane,
+    // not just the 68px header box.
+    <div
+      style={{
+        width,
+        height,
+        position: 'relative',
+      }}
+    >
+      {/* Per-message handles pinned to the lifeline centre. */}
       {handles.map((h) => (
         <Handle
           key={h.id}
           id={h.id}
           type={h.type}
+          // Position prop still required by RF for edge direction hints, but the
+          // visual/measured anchor is forced to the lifeline via left/top.
           position={h.side === 'left' ? Position.Left : Position.Right}
           style={{
             ...HANDLE_BASE_STYLE,
-            top: h.y,
-            ...(h.side === 'left' ? { left: -4 } : { right: -4 }),
+            top: h.y - HANDLE_SIZE / 2,
+            left: lifelineX - HANDLE_SIZE / 2,
           }}
         />
       ))}
@@ -86,9 +102,9 @@ function ParticipantLaneNodeComponent({
           boxShadow: '0 1px 3px var(--sd-shadow, rgba(0,0,0,0.1))',
           position: 'relative',
           zIndex: 1,
+          boxSizing: 'border-box',
         }}
       >
-        {/* Participant label */}
         <div
           style={{
             fontSize: 14,
@@ -114,21 +130,19 @@ function ParticipantLaneNodeComponent({
         )}
       </div>
 
-      {/* Vertical dashed lifeline */}
+      {/* Vertical dashed lifeline down the centre */}
       <div
         style={{
           position: 'absolute',
           top: lifelineTop,
-          left: '50%',
+          left: lifelineX - 1,
           width: 2,
           height: lifelineHeight,
-          marginLeft: -1,
           borderLeft: `2px dashed var(--sd-border, #d1d5db)`,
-          transform: 'translateX(0)',
           pointerEvents: 'none',
         }}
       />
-    </>
+    </div>
   );
 }
 

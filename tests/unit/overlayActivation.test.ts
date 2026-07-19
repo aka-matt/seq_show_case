@@ -60,16 +60,16 @@ describe('Activation Layout', () => {
       expect(activation.y).toBeGreaterThan(0);
     });
 
-    it('should place activation on right side of participant', () => {
+    it('should place activation centred on the participant lifeline', () => {
       const normalized = normalize(dataWithActivations);
       const layout = layoutSequence(normalized);
 
       const activation = layout.activations[0]!;
       const participant = layout.participants.find((p) => p.id === 'p1')!;
 
-      // Activation should be near the right edge of the participant
+      // Activation bar is centred on the lifeline (participant centre).
       expect(activation.x).toBeCloseTo(
-        participant.x + participant.width - 12 - 4,
+        participant.x + participant.width / 2 - activation.width / 2,
         0
       );
     });

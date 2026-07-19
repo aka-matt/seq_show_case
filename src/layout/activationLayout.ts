@@ -52,8 +52,8 @@ export function calculateActivations(
     const deactivateY = rowYPositions[clampedDeactivateRow] ?? 0;
     const height = deactivateY - y + rowHeight;
 
-    // Activation bar appears on the right side of the participant header
-    const x = participant.x + participant.width - DEFAULT_LAYOUT.activationWidth - 4;
+    // Activation bar is centred on the lifeline (participant centre).
+    const x = participant.x + participant.width / 2 - DEFAULT_LAYOUT.activationWidth / 2;
 
     activations.push({
       participantId: pair.participant,
@@ -84,7 +84,8 @@ export function calculateActivations(
     const lastY = rowYPositions[rowYPositions.length - 1] ?? y;
     const height = lastY - y + rowHeight;
 
-    const x = participant.x + participant.width - DEFAULT_LAYOUT.activationWidth - 4;
+    // Centred on the lifeline (participant centre).
+    const x = participant.x + participant.width / 2 - DEFAULT_LAYOUT.activationWidth / 2;
 
     activations.push({
       participantId: activateEvent.participant,
@@ -102,7 +103,8 @@ export function calculateActivations(
 
 /**
  * Calculates the X position for an activation bar given a participant's layout info.
+ * Centred on the lifeline (participant centre).
  */
 export function getActivationX(participant: LayoutParticipant): number {
-  return participant.x + participant.width - DEFAULT_LAYOUT.activationWidth - 4;
+  return participant.x + participant.width / 2 - DEFAULT_LAYOUT.activationWidth / 2;
 }

@@ -116,6 +116,11 @@ export function createNodes(layoutResult: LayoutResult): Node<ParticipantLaneNod
         id: `participant-${participant.id}`,
         type: 'participantLane',
         position: { x: participant.x, y: participant.y },
+        // Explicit size so RF measurement / fitView covers the full lane
+        // (header + lifeline), not just the 68px header box.
+        width: participant.width,
+        height: totalHeight,
+        style: { width: participant.width, height: totalHeight },
         data: nodeData,
         draggable: false,
       };

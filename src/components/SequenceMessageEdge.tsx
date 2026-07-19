@@ -2,12 +2,16 @@
  * Sequence Message Edge - custom React Flow edge for messages between participants.
  * Supports sync (solid line, filled arrow), async (dashed line, open arrow),
  * and return (dashed line, open arrow going back) message kinds.
+ *
+ * Edges are drawn as HORIZONTAL straight lines at the message Y between the
+ * two lifeline centres (handle positions). Using a bezier path would bow the
+ * line away from the lifeline anchors and look "floating".
  */
 import React, { memo } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  getBezierPath,
+  getStraightPath,
   type EdgeProps,
 } from '@xyflow/react';
 
@@ -26,36 +30,32 @@ function SequenceMessageEdgeComponent({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   data,
   selected,
 }: EdgeProps): React.ReactElement {
-  // Cast data to our expected type
   const typedData = data as SequenceMessageEdgeData | undefined;
   const { label, messageKind, arrowHeadType, messageY, status = 'normal' } = typedData ?? {};
-  const msgY = messageY ?? sourceY;
 
-  // Calculate bezier path
-  const [edgePath, labelX] = getBezierPath({
+  // Prefer the layout-computed message Y so the line stays on the event row
+  // even if handle measurement drifts by a pixel or two. Fall back to the
+  // midpoint of the two handle Ys.
+  const msgY = messageY ?? (sourceY + targetY) / 2;
+
+  // Force a perfectly horizontal straight line between the two lifeline centres.
+  const [edgePath, labelX] = getStraightPath({
     sourceX,
-    sourceY,
-    sourcePosition,
+    sourceY: msgY,
     targetX,
-    targetY,
-    targetPosition,
+    targetY: msgY,
   });
 
-  // Determine line style based on message kind
   const isDashed = messageKind === 'async' || messageKind === 'return';
   const strokeDasharray = isDashed ? '8 4' : undefined;
 
-  // Arrow head style
-  const markerEnd = arrowHeadType === 'arrowclosed'
-    ? `url(#arrowclosed-${messageKind})`
-    : `url(#arrow-${messageKind})`;
+  // Unique marker ids per edge so concurrent edges with different colours don't clash.
+  const markerId = `sd-arrow-${id}`;
+  const isClosed = arrowHeadType === 'arrowclosed' || messageKind === 'sync';
 
-  // Determine line color based on status
   const getLineColor = () => {
     if (selected) return 'var(--sd-accent, #2563eb)';
     switch (status) {
@@ -75,81 +75,32 @@ function SequenceMessageEdgeComponent({
   const lineColor = getLineColor();
   const lineWidth = selected ? 2.5 : 2;
 
+  // Marker points along the path direction; for left-going edges (targetX < sourceX)
+  // orient="auto" still orients the arrow toward the path end.
+  const markerEnd = `url(#${markerId})`;
+
   return (
     <>
-      {/* SVG markers definition */}
       <svg style={{ position: 'absolute', width: 0, height: 0 }}>
         <defs>
           <marker
-            id={`arrowclosed-sync`}
+            id={markerId}
             markerWidth="12"
             markerHeight="12"
             refX="10"
             refY="6"
             orient="auto"
-            markerUnits="strokeWidth"
+            markerUnits="userSpaceOnUse"
           >
-            <path d="M0,0 L0,12 L12,6 z" fill={lineColor} />
-          </marker>
-          <marker
-            id={`arrow-sync`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
-            orient="auto"
-            markerUnits="strokeWidth"
-          >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
-          </marker>
-          <marker
-            id={`arrowclosed-async`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
-            orient="auto"
-            markerUnits="strokeWidth"
-          >
-            <path d="M0,0 L0,12 L12,6 z" fill="none" stroke={lineColor} strokeWidth="1.5" />
-          </marker>
-          <marker
-            id={`arrow-async`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
-            orient="auto"
-            markerUnits="strokeWidth"
-          >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
-          </marker>
-          <marker
-            id={`arrowclosed-return`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
-            orient="auto-start-reverse"
-            markerUnits="strokeWidth"
-          >
-            <path d="M0,0 L0,12 L12,6 z" fill="none" stroke={lineColor} strokeWidth="1.5" />
-          </marker>
-          <marker
-            id={`arrow-return`}
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
-            orient="auto-start-reverse"
-            markerUnits="strokeWidth"
-          >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
+            {isClosed ? (
+              <path d="M0,0 L0,12 L12,6 z" fill={lineColor} />
+            ) : (
+              <path d="M0,0 L12,6 L0,12" fill="none" stroke={lineColor} strokeWidth="1.5" />
+            )}
           </marker>
         </defs>
       </svg>
 
-      {/* The edge path */}
       <BaseEdge
         id={id}
         path={edgePath}
@@ -161,13 +112,12 @@ function SequenceMessageEdgeComponent({
         markerEnd={markerEnd}
       />
 
-      {/* Label */}
       {label && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${msgY}px)`,
+              transform: `translate(-50%, -100%) translate(${labelX}px, ${msgY - 4}px)`,
               pointerEvents: 'all',
               background: 'var(--sd-surface, #ffffff)',
               padding: '2px 8px',

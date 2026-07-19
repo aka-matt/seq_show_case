@@ -22,7 +22,7 @@ export interface SequenceDiagramConfig {
 }
 
 export const DEFAULT_CONFIG: SequenceDiagramConfig = {
-  minZoom: 0.25,
+  minZoom: 0.1,
   maxZoom: 2,
   controls: true,
   minimap: false,

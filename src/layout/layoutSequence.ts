@@ -177,15 +177,18 @@ function calculateMessagesAndNotes(
       let fromX: number;
       let toX: number;
 
+      // Endpoints are the lifeline centres (vertical dashed lines), not the
+      // participant header box edges — otherwise edges appear to float free.
+      const fromCenterX = fromParticipant.x + fromParticipant.width / 2;
+      const toCenterX = toParticipant.x + toParticipant.width / 2;
+
       if (event.isSelfCall) {
-        // Self-call: from and to are the same participant
-        // Message starts from right side and loops back
-        fromX = fromParticipant.x + fromParticipant.width;
-        toX = fromX + DEFAULT_LAYOUT.selfMessageWidth;
+        // Self-call: leave the lifeline to the right and loop back.
+        fromX = fromCenterX;
+        toX = fromCenterX + DEFAULT_LAYOUT.selfMessageWidth;
       } else {
-        // Normal message between two different participants
-        fromX = fromParticipant.x + fromParticipant.width;
-        toX = toParticipant.x;
+        fromX = fromCenterX;
+        toX = toCenterX;
       }
 
       const msg: LayoutMessage = {

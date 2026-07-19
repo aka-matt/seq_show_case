@@ -10,19 +10,20 @@ import type { LayoutToken } from "./layout-types";
  * These define the visual spacing and sizing of sequence diagram elements.
  */
 export const DEFAULT_LAYOUT: LayoutToken = {
-  canvasPaddingX: 48,
-  canvasPaddingTop: 32,
-  canvasPaddingBottom: 48,
-  participantWidth: 156,
+  canvasPaddingX: 32,
+  canvasPaddingTop: 24,
+  canvasPaddingBottom: 32,
+  participantWidth: 140,
   participantHeaderHeight: 68,
-  participantGap: 112,
-  firstEventOffset: 72,
-  rowHeight: 56,
-  rowGap: 8,
-  fragmentPaddingX: 20,
-  fragmentPaddingTop: 38,
-  fragmentPaddingBottom: 18,
-  branchHeaderHeight: 28,
+  // Narrower gap so multi-participant diagrams fit typical demo viewports.
+  participantGap: 80,
+  firstEventOffset: 88,
+  rowHeight: 48,
+  rowGap: 6,
+  fragmentPaddingX: 16,
+  fragmentPaddingTop: 32,
+  fragmentPaddingBottom: 14,
+  branchHeaderHeight: 26,
   activationWidth: 12,
-  selfMessageWidth: 54,
+  selfMessageWidth: 48,
 };

@@ -430,8 +430,8 @@ export class SequenceDiagramElement extends HTMLElement {
   fitView(options?: { padding?: number; duration?: number }): void {
     if (this.reactFlowInstance) {
       this.reactFlowInstance.fitView({
-        padding: options?.padding ?? 0.1,
-        duration: options?.duration ?? 300,
+        padding: options?.padding ?? 0.15,
+        duration: options?.duration ?? 200,
       });
     } else {
       // If no instance yet, force a re-render with fitView enabled
@@ -855,7 +855,7 @@ export class SequenceDiagramElement extends HTMLElement {
   private handleReactFlowReady(instance: { fitView: (options?: object) => void; setViewport: (viewport: object) => void }): void {
     this.reactFlowInstance = instance;
     if (this._fitView && this.currentLayout) {
-      instance.fitView({ padding: 0.1, duration: 300 });
+      instance.fitView({ padding: 0.15, duration: 200 });
     }
   }
 

@@ -80,7 +80,10 @@ function SequenceFlowComponent({
     zoomOnDoubleClick: false,
     preventScrolling: true,
     fitView: config.fitView ?? true,
-    minZoom: config.minZoom ?? 0.25,
+    // Slightly more padding so multi-participant diagrams don't feel cramped /
+    // oversized against the host viewport edges.
+    fitViewOptions: { padding: 0.15, includeHiddenNodes: false },
+    minZoom: config.minZoom ?? 0.1,
     maxZoom: config.maxZoom ?? 2,
     onlyRenderVisibleElements: true,
   }), [config]);
@@ -100,12 +103,20 @@ function SequenceFlowComponent({
   // Cast to any to bypass strict type checking for custom node/edge data types
   const [nodes, setNodes] = useNodesState(initialNodes as any);
   const [edges, setEdges] = useEdgesState(initialEdges as any);
+  const reactFlowRef = useRef<ReactFlowInstance | null>(null);
 
-  // Update nodes and edges when layout changes
+  // Update nodes and edges when layout changes, then re-fit so the diagram
+  // scales into the host viewport instead of overflowing at 1:1 zoom.
   useEffect(() => {
     setNodes(initialNodes as any);
     setEdges(initialEdges as any);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
+    if (flowConfig.fitView && reactFlowRef.current && initialNodes.length > 0) {
+      // Defer one frame so RF has measured the new node dimensions.
+      requestAnimationFrame(() => {
+        reactFlowRef.current?.fitView({ padding: 0.15, duration: 200 });
+      });
+    }
+  }, [initialNodes, initialEdges, setNodes, setEdges, flowConfig.fitView]);
 
   // Handle node changes (selection, etc.)
   const onNodesChange: OnNodesChange = useCallback(
@@ -138,6 +149,7 @@ function SequenceFlowComponent({
 
   // Handle React Flow init
   const onInit = useCallback((instance: ReactFlowInstance) => {
+    reactFlowRef.current = instance;
     if (!onReadyCalled.current && onReady) {
       onReadyCalled.current = true;
       onReady({

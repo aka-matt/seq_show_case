@@ -1,6 +1,10 @@
 /**
  * Self Message Edge - custom React Flow edge for self-call messages.
- * Renders as a loop that goes out to the right and comes back.
+ * Renders as a loop that goes out to the right of the lifeline and comes back.
+ *
+ * Anchors on the source handle (lifeline centre). sourceX/sourceY come from
+ * React Flow's handle measurement — after the ParticipantLaneNode fix those
+ * are on the vertical dashed line, not the header box edge.
  */
 import React, { memo } from 'react';
 import {
@@ -20,51 +24,46 @@ export interface SelfMessageEdgeData {
 
 function SelfMessageEdgeComponent({
   id,
+  sourceX,
+  sourceY,
   data,
   selected,
 }: EdgeProps): React.ReactElement {
-  // Cast data to our expected type
   const typedData = data as SelfMessageEdgeData | undefined;
   const { label, messageKind, messageY, selfCallWidth, status = 'normal' } = typedData ?? {};
-  const msgY = messageY ?? 0;
+  const msgY = messageY ?? sourceY;
   const loopWidth = selfCallWidth ?? 54;
+  // Anchor at the measured handle (lifeline centre).
+  const x0 = sourceX;
+  const y0 = msgY;
+  const y1 = msgY + 28;
 
-  // Self-call path: start at center-right, go out, loop, come back
-  // Simplified loop path
-  const loopPath = `
-    M 0 ${msgY}
-    C ${loopWidth * 0.4} ${msgY},
-      ${loopWidth} ${msgY},
-      ${loopWidth} ${msgY + 24}
-    L ${loopWidth} ${msgY + 48}
-    C ${loopWidth} ${msgY + 72},
-      ${loopWidth * 0.6} ${msgY + 72},
-      0 ${msgY + 72}
-    L -4 ${msgY + 72}
-  `.trim().replace(/\n/g, ' ');
+  // Self-call path: leave the lifeline to the right, drop, return.
+  const loopPath = [
+    `M ${x0} ${y0}`,
+    `L ${x0 + loopWidth} ${y0}`,
+    `L ${x0 + loopWidth} ${y1}`,
+    `L ${x0} ${y1}`,
+  ].join(' ');
 
   const isDashed = messageKind === 'async' || messageKind === 'return';
   const strokeDasharray = isDashed ? '8 4' : undefined;
+  const markerId = `self-arrow-${id}`;
+  const isClosed = messageKind === 'sync';
 
-  // Determine arrow direction
-  const markerEnd = messageKind === 'sync'
-    ? `url(#self-arrowclosed)`
-    : `url(#self-arrow)`;
-
-  // Determine line color based on status
   const getLineColor = () => {
-    if (selected) return 'var(--sd-accent)';
+    if (selected) return 'var(--sd-accent, #2563eb)';
     switch (status) {
       case 'success':
-        return 'var(--sd-success)';
+        return 'var(--sd-success, #059669)';
       case 'warning':
-        return 'var(--sd-warning)';
+        return 'var(--sd-warning, #d97706)';
       case 'error':
-        return 'var(--sd-error)';
+        return 'var(--sd-error, #dc2626)';
       case 'muted':
-        return 'var(--sd-text-muted)';
+        return 'var(--sd-text-muted, #6b7280)';
       default:
-        return 'var(--sd-line)';
+        return 'var(--sd-line, #374151)';
     }
   };
 
@@ -73,35 +72,26 @@ function SelfMessageEdgeComponent({
 
   return (
     <>
-      {/* SVG markers definition */}
       <svg style={{ position: 'absolute', width: 0, height: 0 }}>
         <defs>
           <marker
-            id="self-arrowclosed"
+            id={markerId}
             markerWidth="12"
             markerHeight="12"
             refX="10"
             refY="6"
             orient="auto"
-            markerUnits="strokeWidth"
+            markerUnits="userSpaceOnUse"
           >
-            <path d="M0,0 L0,12 L12,6 z" fill={lineColor} />
-          </marker>
-          <marker
-            id="self-arrow"
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
-            orient="auto"
-            markerUnits="strokeWidth"
-          >
-            <path d="M0,0 L0,12 L12,6" fill="none" stroke={lineColor} strokeWidth="1.5" />
+            {isClosed ? (
+              <path d="M0,0 L0,12 L12,6 z" fill={lineColor} />
+            ) : (
+              <path d="M0,0 L12,6 L0,12" fill="none" stroke={lineColor} strokeWidth="1.5" />
+            )}
           </marker>
         </defs>
       </svg>
 
-      {/* Self-call loop edge */}
       <BaseEdge
         id={id}
         path={loopPath}
@@ -110,25 +100,24 @@ function SelfMessageEdgeComponent({
           strokeWidth: lineWidth,
           strokeDasharray,
         }}
-        markerEnd={markerEnd}
+        markerEnd={`url(#${markerId})`}
       />
 
-      {/* Label */}
       {label && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${loopWidth / 2}px, ${msgY + 36}px)`,
+              transform: `translate(0, -50%) translate(${x0 + loopWidth + 6}px, ${(y0 + y1) / 2}px)`,
               pointerEvents: 'all',
-              background: 'var(--sd-surface)',
+              background: 'var(--sd-surface, #ffffff)',
               padding: '2px 8px',
               borderRadius: 4,
-              border: '1px solid var(--sd-border)',
+              border: '1px solid var(--sd-border, #e5e7eb)',
               fontSize: 12,
-              color: 'var(--sd-text)',
+              color: 'var(--sd-text, #374151)',
               whiteSpace: 'nowrap',
-              boxShadow: '0 1px 2px var(--sd-shadow)',
+              boxShadow: '0 1px 2px var(--sd-shadow, rgba(0,0,0,0.05))',
             }}
           >
             {label}
