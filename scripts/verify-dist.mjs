@@ -91,6 +91,50 @@ function checkIIFEDefinition(filePath) {
   passed++;
 }
 
+/**
+ * The IIFE is loaded as a plain browser <script>. Any leftover
+ * `process.env.NODE_ENV` (or other process.*) references throw
+ * ReferenceError and prevent the custom element from registering —
+ * which shows up as blank diagram areas on example.html.
+ */
+function checkNoProcessEnv(filePath) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const matches = content.match(/\bprocess\.env\b/g);
+  if (matches) {
+    log(
+      'FAIL',
+      `${path.basename(filePath)}: contains process.env (${matches.length}×) — ` +
+        'will throw in browsers and leave diagrams blank. Set vite define.NODE_ENV.'
+    );
+    failed++;
+    return;
+  }
+  log('PASS', `${path.basename(filePath)}: no process.env references`);
+  passed++;
+}
+
+function checkExamplesPage() {
+  const page = path.join(DIST, 'examples', 'example.html');
+  if (!fs.existsSync(page)) {
+    log('FAIL', 'Missing dist/examples/example.html');
+    failed++;
+    return;
+  }
+  log('PASS', 'File exists: examples/example.html');
+  passed++;
+  const fixtures = ['basic.json', 'checkout-alt.json', 'nested-fragments.json', 'parallel-services.json', 'polling-loop.json'];
+  for (const f of fixtures) {
+    const p = path.join(DIST, 'examples', f);
+    if (!fs.existsSync(p)) {
+      log('FAIL', `Missing dist/examples/${f}`);
+      failed++;
+    } else {
+      log('PASS', `File exists: examples/${f}`);
+      passed++;
+    }
+  }
+}
+
 function checkSchemaMatch() {
   if (!fs.existsSync(SOURCE_SCHEMA)) {
     log('FAIL', `Source schema not found: ${SOURCE_SCHEMA}`);
@@ -133,6 +177,7 @@ console.log('\n[2] Checking IIFE bundle...\n');
 const iifePath = path.join(DIST, 'sequence-diagram.iife.js');
 if (fs.existsSync(iifePath)) {
   checkIIFEDefinition(iifePath);
+  checkNoProcessEnv(iifePath);
   checkNoEval(iifePath);
   checkNoExternalCss(iifePath);
   checkFileSize(iifePath);
@@ -141,6 +186,7 @@ if (fs.existsSync(iifePath)) {
 console.log('\n[3] Checking ESM bundle...\n');
 const esmPath = path.join(DIST, 'sequence-diagram.es.js');
 if (fs.existsSync(esmPath)) {
+  checkNoProcessEnv(esmPath);
   checkNoEval(esmPath);
   checkNoExternalCss(esmPath);
   checkFileSize(esmPath);
@@ -148,6 +194,9 @@ if (fs.existsSync(esmPath)) {
 
 console.log('\n[4] Checking schema...\n');
 checkSchemaMatch();
+
+console.log('\n[5] Checking examples page...\n');
+checkExamplesPage();
 
 console.log('\n========================================');
 console.log(`  Results: ${passed} passed, ${failed} failed`);

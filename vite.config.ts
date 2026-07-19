@@ -58,6 +58,12 @@ function serveStaticDirs(dirs: Record<string, string>): Plugin {
 }
 
 export default defineConfig({
+  // Library IIFE is loaded as a plain <script> in static HTML — there is no
+  // Node `process`. Without this, React's `process.env.NODE_ENV` checks throw
+  // ReferenceError and the custom element never registers (blank diagrams).
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
   plugins: [
     react(),
     // Generate the bundled type declarations declared in package.json `types`.
