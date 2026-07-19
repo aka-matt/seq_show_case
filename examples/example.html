@@ -451,17 +451,22 @@
 
 <!-- ================================================================
      LOAD THE COMPONENT — IIFE
-     Tries /dist/… (npm run dev from project root) then ./… (npm run serve:dist).
+     Page URL: /examples/example.html
+       - source: examples/example.html  (npm run dev / python3 -m http.server)
+       - built:  dist/examples/example.html  (npm run serve:dist)
+     Component: /dist/sequence-diagram.iife.js or ../…
      ================================================================ -->
 <script>
   (function loadComponent() {
     const candidates = [
-      // vite dev / project root: public/example.html → /dist/…
+      // npm run dev / python3 -m http.server at project root
       '/dist/sequence-diagram.iife.js',
-      // dist/example.html after build rewrite / relative open
+      // relative from /examples/ when base is project root
+      '../dist/sequence-diagram.iife.js',
+      // npm run serve:dist (http.server --directory dist)
+      '../sequence-diagram.iife.js',
+      // same-folder fallback
       './sequence-diagram.iife.js',
-      // public/example.html opened as file next to dist/
-      './dist/sequence-diagram.iife.js',
     ];
     let i = 0;
     function tryNext() {
@@ -470,8 +475,9 @@
         document.body.insertAdjacentHTML(
           'afterbegin',
           '<div style="background:#7f1d1d;color:#fff;padding:12px 16px;font:14px system-ui">' +
-          'Failed to load <code>sequence-diagram.iife.js</code>. Run <code>npm run build</code> then ' +
-          '<code>npm run serve:dist</code>, or <code>npm run dev</code> and open <code>/example.html</code>.' +
+          'Failed to load <code>sequence-diagram.iife.js</code>. Run <code>npm run build</code> then open ' +
+          '<code>/examples/example.html</code> via <code>npm run dev</code> or ' +
+          '<code>python3 -m http.server</code> (project root) / <code>npm run serve:dist</code>.' +
           '</div>'
         );
         return;
@@ -756,7 +762,7 @@
   </div>
   <p class="section-desc">
     Sync, async, return, self-call, note, activation, divider, and all fragment kinds.
-    All loaded from <code>public/examples/*.json</code>.
+    All loaded from <code>examples/*.json</code> (same directory as this page).
   </p>
 
   <!-- 5a: Messages + activations -->
@@ -815,10 +821,10 @@
       const el = document.getElementById('feature-demo-1');
       // Resolve relative to this page so it works from project root (dev) and dist/.
       const base = new URL('.', document.currentScript?.src || location.href);
-      // Prefer /examples/ (vite public/) then ./examples/ (dist layout).
+      // Same directory as this page: /examples/*.json (dev + dist).
       const candidates = (name) => [
-        new URL(`examples/${name}.json`, location.origin + '/').href,
-        new URL(`./examples/${name}.json`, location.href).href,
+        new URL(`./${name}.json`, location.href).href,
+        new URL(`/examples/${name}.json`, location.origin).href,
       ];
       function load(name) {
         const urls = candidates(name);

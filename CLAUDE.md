@@ -53,7 +53,7 @@ Host Page → Custom Element → Validation → Normalizer → Layout Engine →
 
 ```bash
 # Development
-npm run dev          # Start Vite dev server (example.html)
+npm run dev          # Vite → open /examples/example.html
 npm run lint         # ESLint
 npm run typecheck    # TypeScript --noEmit
 npm run test         # Vitest unit tests
@@ -62,11 +62,17 @@ npm run test:e2e     # Playwright E2E/component tests
 npm run test:visual  # Visual regression screenshot tests
 
 # Build
-npm run build        # Vite library mode → dist/ (ESM + IIFE)
+npm run build        # Vite library mode → dist/ (ESM + IIFE + examples/)
 npm run build:typecheck # Verify build output types
+npm run serve:dist   # Static server on dist/ → /examples/example.html
 
 # Quality
 npm run verify-dist  # dist/ smoke tests (file existence, no eval, schema match)
+
+# Demo page (same URL under all servers)
+#   npm run dev                     → http://localhost:3000/examples/example.html
+#   python3 -m http.server 3000     → http://localhost:3000/examples/example.html  (repo root)
+#   npm run serve:dist              → http://localhost:3000/examples/example.html
 ```
 
 ## JSON Data Model (Summary)
@@ -137,7 +143,7 @@ sequence-diagram {
 5. **Phase 4:** Activation, note, divider, fragment overlays
 6. **Phase 5:** Web Component API, Shadow DOM styles, lifecycle, multi-instance
 7. **Phase 6:** Theme system (light/dark/system), all 7 palettes
-8. **Phase 7:** `example.html` demo page
+8. **Phase 7:** `examples/example.html` demo page (+ fixtures)
 9. **Phase 8:** Full test suite, visual regression, bundle analysis
 
 **First vertical slice (Phase 0→3 minimal):** Two participants, one sync message, light/classic, pan/zoom/fit.

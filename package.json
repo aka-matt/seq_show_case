@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc --declaration --emitDeclarationOnly --outDir dist --noEmit false --project tsconfig.build.json && vite build && node scripts/copy-schema.mjs && node --input-type=module -e \"import fs from 'fs'; let html=fs.readFileSync('public/example.html','utf8'); html=html.replace(/src=\\\"\\.\\/dist\\//g,'src=\\\"./'); fs.writeFileSync('dist/example.html',html); fs.mkdirSync('dist/examples',{recursive:true}); fs.readdirSync('public/examples').forEach(f=>fs.cpSync('public/examples/'+f,'dist/examples/'+f)); console.log('Copied example.html and fixtures to dist/');\"",
+    "build": "tsc --declaration --emitDeclarationOnly --outDir dist --noEmit false --project tsconfig.build.json && vite build && node scripts/copy-schema.mjs && node scripts/copy-examples.mjs",
     "build:typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx",
     "lint:fix": "eslint . --ext ts,tsx --fix",
