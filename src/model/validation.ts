@@ -3,7 +3,7 @@
  * All validation is React-independent — pure TypeScript only.
  */
 
-import Ajv, { type ValidateFunction } from "ajv";
+import Ajv2020, { type ValidateFunction } from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 
 import type { SequenceDiagramData, SequenceEvent } from "./public-types";
@@ -30,7 +30,7 @@ import {
 // AJV setup
 // ---------------------------------------------------------------------------
 
-const ajv = new Ajv({
+const ajv = new Ajv2020({
   allErrors: true,
   verbose: true,
   strict: false,

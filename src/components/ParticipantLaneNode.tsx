@@ -1,51 +1,75 @@
 /**
  * Participant Lane Node - custom React Flow node
- * Renders a participant header (box) with a vertical dashed lifeline extending down.
+ *
+ * Renders a participant header (box) at the top and a vertical dashed lifeline
+ * extending down through the event area. Per spec section 5.2, the node
+ * dynamically generates one invisible handle per message that touches the
+ * participant, using the stable ID format:
+ *
+ *   - msg:<messageId>:left    — regular message, this participant's left side
+ *   - msg:<messageId>:right   — regular message, this participant's right side
+ *   - self:<messageId>:out    — self-call, this participant's right side
+ *   - self:<messageId>:in     — self-call, this participant's left side
+ *
+ * Handles are positioned at the absolute Y of their corresponding message so
+ * the arrow leaves/arrives at the correct row regardless of direction.
  */
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { LayoutParticipant } from '../layout/layout-types';
+import type { ParticipantHandle } from '../react-flow/createNodes';
 
 const PARTICIPANT_HEADER_HEIGHT = 68;
+
+/** Shared invisible styling for all dynamic handles. */
+const HANDLE_BASE_STYLE: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  width: 8,
+  height: 8,
+  opacity: 0,
+  // Absolute positioning so we can place each handle at its message Y.
+  position: 'absolute',
+};
 
 export interface ParticipantLaneNodeData {
   [key: string]: unknown;
   participant: LayoutParticipant;
-  isFirst: boolean;
-  isLast: boolean;
+  /** Handles for every message that touches this participant, pre-computed by createNodes. */
+  handles: ParticipantHandle[];
+  /** Total canvas height — used to extend the lifeline down to the bottom of the diagram. */
+  totalHeight: number;
 }
 
 function ParticipantLaneNodeComponent({
   data,
 }: NodeProps): React.ReactElement {
-  // Cast data to our expected type - React Flow passes custom data through
-  const typedData = data as {
-    participant: LayoutParticipant;
-    isFirst: boolean;
-    isLast: boolean;
-  };
-  const { participant, isFirst, isLast } = typedData;
+  // Cast data to our expected type — React Flow passes custom data through.
+  const typedData = data as ParticipantLaneNodeData;
+  const { participant, handles, totalHeight } = typedData;
   const width = participant.width;
+
+  // The header sits at the top of the node; the lifeline spans from just below
+  // the header down to the bottom of the diagram.
+  const lifelineTop = PARTICIPANT_HEADER_HEIGHT;
+  const lifelineHeight = Math.max(totalHeight - lifelineTop, 0);
 
   return (
     <>
-      {/* Left handle for messages going left */}
-      {!isFirst && (
+      {/* Per-message handles, rendered first so they sit behind the header box. */}
+      {handles.map((h) => (
         <Handle
-          type="target"
-          position={Position.Left}
-          id={`lane-left-${participant.id}`}
+          key={h.id}
+          id={h.id}
+          type={h.type}
+          position={h.side === 'left' ? Position.Left : Position.Right}
           style={{
-            background: 'transparent',
-            border: 'none',
-            width: 8,
-            height: 8,
-            top: 'auto',
-            left: -4,
-            opacity: 0,
+            ...HANDLE_BASE_STYLE,
+            top: h.y,
+            ...(h.side === 'left' ? { left: -4 } : { right: -4 }),
           }}
         />
-      )}
+      ))}
 
       {/* Participant header box */}
       <div
@@ -61,6 +85,7 @@ function ParticipantLaneNodeComponent({
           justifyContent: 'center',
           boxShadow: '0 1px 3px var(--sd-shadow, rgba(0,0,0,0.1))',
           position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Participant label */}
@@ -93,33 +118,16 @@ function ParticipantLaneNodeComponent({
       <div
         style={{
           position: 'absolute',
-          top: PARTICIPANT_HEADER_HEIGHT,
+          top: lifelineTop,
           left: '50%',
           width: 2,
-          height: 800,
+          height: lifelineHeight,
           marginLeft: -1,
           borderLeft: `2px dashed var(--sd-border, #d1d5db)`,
           transform: 'translateX(0)',
+          pointerEvents: 'none',
         }}
       />
-
-      {/* Right handle for messages going right */}
-      {!isLast && (
-        <Handle
-          type="source"
-          position={Position.Right}
-          id={`lane-right-${participant.id}`}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            width: 8,
-            height: 8,
-            top: 'auto',
-            right: -4,
-            opacity: 0,
-          }}
-        />
-      )}
     </>
   );
 }

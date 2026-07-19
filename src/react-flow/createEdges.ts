@@ -57,10 +57,14 @@ export function createEdges(layoutResult: LayoutResult): Edge[] {
       ...(message.status !== undefined && { status: message.status }),
     };
 
+    // Source is always the sender (`from`); target is always the recipient (`to`).
+    // The handle side flips when the message travels right-to-left (reversed),
+    // because the arrow leaves from the sender's left side and arrives at the
+    // recipient's right side in that case.
     return {
       id: `edge-${message.eventId}`,
-      source: isReversed ? `participant-${message.toParticipantId}` : `participant-${message.fromParticipantId}`,
-      target: isReversed ? `participant-${message.fromParticipantId}` : `participant-${message.toParticipantId}`,
+      source: `participant-${message.fromParticipantId}`,
+      target: `participant-${message.toParticipantId}`,
       type: 'sequenceMessage',
       data: messageData,
       sourceHandle: isReversed ? `msg:${message.eventId}:left` : `msg:${message.eventId}:right`,

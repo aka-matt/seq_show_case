@@ -1,9 +1,20 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Generate the bundled type declarations declared in package.json `types`.
+    dts({
+      entryRoot: 'src',
+      // Roll up into a single index.d.ts so consumers can resolve types from
+      // the package root without having to follow nested paths.
+      rollupTypes: true,
+      insertTypesEntry: true,
+    }),
+  ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
