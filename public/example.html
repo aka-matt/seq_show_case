@@ -335,6 +335,47 @@
       width: 100%;
     }
 
+    /* ---- Error scenario picker (Section 9) ---- */
+    .error-scenarios {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .error-chip {
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--page-border);
+      background: var(--page-surface);
+      color: var(--page-text);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .error-chip:hover { border-color: var(--page-danger); color: var(--page-danger); }
+    .error-chip.active {
+      background: var(--page-danger);
+      border-color: var(--page-danger);
+      color: #fff;
+    }
+    .error-chip.reset {
+      background: var(--page-accent);
+      border-color: var(--page-accent);
+      color: #fff;
+    }
+    .error-chip.reset:hover { background: var(--page-accent-hover); border-color: var(--page-accent-hover); color: #fff; }
+    .error-summary {
+      font-size: 0.85rem;
+      color: var(--page-danger);
+      margin-left: auto;
+      font-weight: 500;
+      max-width: 60%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     /* ---- Divider between sections ---- */
     hr.section-rule {
       max-width: 1100px;
@@ -951,54 +992,204 @@
     <h2 class="section-title">Error Handling</h2>
   </div>
   <p class="section-desc">
-    Clicking the button sets <code>data</code> to an invalid diagram (unknown participant reference).
-    The component catches the error, renders an error state, and fires <code>sequence-error</code>.
+    Each chip loads an invalid diagram with a specific failure mode. The component renders an
+    error card in place of the diagram and dispatches <code>sequence-error</code> with structured
+    details. Click <strong>Reset</strong> to return to the valid example.
   </p>
   <div class="demo-card">
     <div class="demo-toolbar">
-      <button id="btn-bad-data" class="danger">Load Invalid Data</button>
-      <span id="error-summary" style="font-size:0.85rem;color:var(--page-danger);"></span>
+      <div class="error-scenarios" id="error-scenarios">
+        <button class="error-chip"        data-scenario="valid">Reset (valid)</button>
+        <button class="error-chip reset"  data-scenario="valid-valid">Valid baseline</button>
+        <button class="error-chip"        data-scenario="malformed">Malformed JSON</button>
+        <button class="error-chip"        data-scenario="missing">Missing required field</button>
+        <button class="error-chip"        data-scenario="dup-participant">Duplicate participant ID</button>
+        <button class="error-chip"        data-scenario="dup-event">Duplicate event ID</button>
+        <button class="error-chip"        data-scenario="unknown-ref">Unknown participant reference</button>
+        <button class="error-chip"        data-scenario="bad-enum">Invalid enum value</button>
+        <button class="error-chip"        data-scenario="orphan-deactivate">Orphan deactivate</button>
+        <button class="error-chip"        data-scenario="depth-exceeded">Fragment depth exceeded</button>
+      </div>
+      <span id="error-summary" class="error-summary"></span>
     </div>
     <div class="diagram-wrap">
-      <sequence-diagram id="error-demo" palette="slate" height="280px"></sequence-diagram>
-      <script type="application/json">
-      {
-        "schemaVersion": "1.0",
-        "participants": [{ "id": "g", "label": "Good" }],
-        "events": [{ "id": "m1", "type": "message", "from": "g", "to": "g", "label": "Valid", "messageKind": "sync" }]
-      }
-      </script>
+      <sequence-diagram id="error-demo" palette="slate" height="320px"></sequence-diagram>
     </div>
     <div class="event-log" id="error-log"></div>
   </div>
   <script>
     (() => {
-      const badData = {
-        schemaVersion: "1.0",
-        participants: [
-          { id: "p1", label: "P1" },
-          { id: "p2", label: "P2" }
-        ],
-        events: [
-          { id: "m1", type: "message", from: "p1", to: "ghost", label: "To unknown", messageKind: "sync" }
-        ]
-      };
       const el = document.getElementById('error-demo');
       const log = document.getElementById('error-log');
       const summary = document.getElementById('error-summary');
+      const chipsRoot = document.getElementById('error-scenarios');
 
-      el.addEventListener('sequence-error', e => {
-        const errs = e.detail?.errors || [];
+      // Initial valid diagram (two participants, one message).
+      const validData = {
+        schemaVersion: "1.0",
+        participants: [
+          { id: "u", label: "User" },
+          { id: "s", label: "Server" }
+        ],
+        events: [
+          { id: "m1", type: "message", from: "u", to: "s", label: "Hello", messageKind: "sync" }
+        ]
+      };
+
+      // Each scenario is either a plain object (set via element.data) or a string
+      // (set via element.data, triggering the JSON-string parsing path) or a
+      // null sentinel that loads nothing.
+      const scenarios = {
+        valid: validData,
+        'valid-valid': validData,
+
+        // 1. Malformed JSON string — exercises the JSON.parse error path.
+        malformed: '{ "schemaVersion": "1.0", "participants": [ }',
+
+        // 2. Missing required field — `events` field is absent.
+        missing: {
+          schemaVersion: "1.0",
+          participants: [{ id: "u", label: "User" }]
+          // events missing
+        },
+
+        // 3. Duplicate participant id.
+        'dup-participant': {
+          schemaVersion: "1.0",
+          participants: [
+            { id: "p", label: "First" },
+            { id: "p", label: "Second" }
+          ],
+          events: [
+            { id: "m1", type: "message", from: "p", to: "p", label: "x", messageKind: "sync" }
+          ]
+        },
+
+        // 4. Duplicate event id (sibling, not nested).
+        'dup-event': {
+          schemaVersion: "1.0",
+          participants: [
+            { id: "a", label: "A" },
+            { id: "b", label: "B" }
+          ],
+          events: [
+            { id: "m1", type: "message", from: "a", to: "b", label: "1", messageKind: "sync" },
+            { id: "m1", type: "message", from: "b", to: "a", label: "2", messageKind: "sync" }
+          ]
+        },
+
+        // 5. Message references an unknown participant.
+        'unknown-ref': {
+          schemaVersion: "1.0",
+          participants: [
+            { id: "p1", label: "P1" },
+            { id: "p2", label: "P2" }
+          ],
+          events: [
+            { id: "m1", type: "message", from: "p1", to: "ghost", label: "To unknown", messageKind: "sync" }
+          ]
+        },
+
+        // 6. Enum violation — fragmentKind is not in the allowed set.
+        'bad-enum': {
+          schemaVersion: "1.0",
+          participants: [
+            { id: "a", label: "A" },
+            { id: "b", label: "B" }
+          ],
+          events: [
+            {
+              id: "f1",
+              type: "fragment",
+              fragmentKind: "wat",
+              branches: [
+                { id: "br1", label: "branch", events: [] }
+              ]
+            }
+          ]
+        },
+
+        // 7. Deactivate without a matching activate.
+        'orphan-deactivate': {
+          schemaVersion: "1.0",
+          participants: [
+            { id: "a", label: "A" },
+            { id: "b", label: "B" }
+          ],
+          events: [
+            { id: "m1", type: "message", from: "a", to: "b", label: "hi", messageKind: "sync" },
+            { id: "d1", type: "deactivate", participant: "a" }
+          ]
+        },
+
+        // 8. Fragment nesting 5 levels deep — exceeds MAX_DEPTH (4).
+        // The helpers below build a self-referential shape at any depth.
+        ...(() => {
+          const buildDeepFragment = (depth) => {
+            const inner = depth <= 1
+              ? [{ id: "leaf-" + depth, type: "message", from: "a", to: "b", label: "leaf", messageKind: "sync" }]
+              : [buildDeepFragmentBranch(depth)];
+            return {
+              id: "f" + depth,
+              type: "fragment",
+              fragmentKind: "loop",
+              branches: [{ id: "br" + depth, label: "L" + depth, events: inner }]
+            };
+          };
+          const buildDeepFragmentBranch = (depth) => buildDeepFragment(depth - 1);
+          return {
+            'depth-exceeded': {
+              schemaVersion: "1.0",
+              participants: [
+                { id: "a", label: "A" },
+                { id: "b", label: "B" }
+              ],
+              events: [buildDeepFragment(5)]
+            }
+          };
+        })()
+      };
+
+      const setActiveChip = (name) => {
+        chipsRoot.querySelectorAll('.error-chip').forEach((c) => {
+          c.classList.toggle('active', c.dataset.scenario === name);
+        });
+      };
+
+      el.addEventListener('sequence-error', (e) => {
+        const errs = (e.detail && e.detail.errors) || [];
         if (errs.length) {
-          summary.textContent = errs[0].message || errs[0].code;
+          const first = errs[0];
+          summary.textContent = `[${first.code}] ${first.message}`;
           log.textContent = JSON.stringify(e.detail, null, 2);
         }
       });
-      el.addEventListener('sequence-ready', () => { summary.textContent = ''; log.textContent = ''; });
-
-      document.getElementById('btn-bad-data').addEventListener('click', () => {
-        el.data = badData;
+      el.addEventListener('sequence-warning', (e) => {
+        const warns = (e.detail && e.detail.warnings) || [];
+        if (warns.length) {
+          log.textContent = JSON.stringify({ warnings: warns }, null, 2);
+        }
       });
+      el.addEventListener('sequence-ready', () => {
+        summary.textContent = '';
+        log.textContent = '';
+      });
+
+      chipsRoot.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.error-chip');
+        if (!btn) return;
+        const name = btn.dataset.scenario;
+        const data = scenarios[name];
+        if (data === undefined) return;
+        setActiveChip(name);
+        // Strings exercise the JSON.parse path; objects exercise the direct path.
+        // For the malformed scenario the parser will throw INVALID_JSON.
+        el.data = data;
+      });
+
+      // Load valid baseline on first paint.
+      setActiveChip('valid');
+      el.data = validData;
     })();
   </script>
 </section>
