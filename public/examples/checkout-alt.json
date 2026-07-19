@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "1.0",
+  "id": "checkout-flow",
+  "title": "Checkout Flow",
+  "description": "Alt fragment with authorized and declined branches",
+  "participants": [
+    { "id": "user", "label": "Customer", "kind": "actor", "icon": "person" },
+    { "id": "web", "label": "Web App", "kind": "service", "icon": "browser" },
+    { "id": "api", "label": "Checkout API", "kind": "service", "icon": "server" },
+    { "id": "pay", "label": "Payment Provider", "kind": "external", "icon": "cloud" },
+    { "id": "db", "label": "Orders DB", "kind": "database", "icon": "database" }
+  ],
+  "events": [
+    {
+      "id": "m1",
+      "type": "message",
+      "from": "user",
+      "to": "web",
+      "label": "Submit order",
+      "messageKind": "sync"
+    },
+    {
+      "id": "m2",
+      "type": "message",
+      "from": "web",
+      "to": "api",
+      "label": "POST /orders",
+      "messageKind": "sync"
+    },
+    {
+      "id": "a1",
+      "type": "activate",
+      "participant": "api"
+    },
+    {
+      "id": "f1",
+      "type": "fragment",
+      "fragmentKind": "alt",
+      "label": "Payment result",
+      "branches": [
+        {
+          "id": "success",
+          "label": "authorized",
+          "events": [
+            {
+              "id": "m3",
+              "type": "message",
+              "from": "api",
+              "to": "pay",
+              "label": "Authorize payment",
+              "messageKind": "sync"
+            },
+            {
+              "id": "m4",
+              "type": "message",
+              "from": "pay",
+              "to": "api",
+              "label": "Authorization approved",
+              "messageKind": "return",
+              "status": "success"
+            },
+            {
+              "id": "m5",
+              "type": "message",
+              "from": "api",
+              "to": "db",
+              "label": "Insert order",
+              "messageKind": "sync"
+            }
+          ]
+        },
+        {
+          "id": "failure",
+          "label": "declined",
+          "events": [
+            {
+              "id": "m6",
+              "type": "message",
+              "from": "pay",
+              "to": "api",
+              "label": "Payment declined",
+              "messageKind": "return",
+              "status": "error"
+            },
+            {
+              "id": "n1",
+              "type": "note",
+              "text": "No order is persisted",
+              "over": ["api", "db"],
+              "tone": "warning"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "d1",
+      "type": "deactivate",
+      "participant": "api"
+    },
+    {
+      "id": "m7",
+      "type": "message",
+      "from": "api",
+      "to": "web",
+      "label": "Checkout response",
+      "messageKind": "return"
+    }
+  ]
+}

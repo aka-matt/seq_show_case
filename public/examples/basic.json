@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0",
+  "id": "basic-example",
+  "title": "Basic Sequence Diagram",
+  "description": "Minimal example with three participants and sync messages",
+  "participants": [
+    { "id": "client", "label": "Client", "kind": "actor" },
+    { "id": "server", "label": "Server", "kind": "service" },
+    { "id": "db", "label": "Database", "kind": "database" }
+  ],
+  "events": [
+    {
+      "id": "msg1",
+      "type": "message",
+      "from": "client",
+      "to": "server",
+      "label": "GET /api/users",
+      "messageKind": "sync"
+    },
+    {
+      "id": "msg2",
+      "type": "message",
+      "from": "server",
+      "to": "db",
+      "label": "SELECT * FROM users",
+      "messageKind": "sync"
+    },
+    {
+      "id": "msg3",
+      "type": "message",
+      "from": "db",
+      "to": "server",
+      "label": "Result set",
+      "messageKind": "return"
+    },
+    {
+      "id": "msg4",
+      "type": "message",
+      "from": "server",
+      "to": "client",
+      "label": "200 OK",
+      "messageKind": "return"
+    }
+  ]
+}

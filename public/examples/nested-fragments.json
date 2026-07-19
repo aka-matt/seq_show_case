@@ -1,0 +1,178 @@
+{
+  "schemaVersion": "1.0",
+  "id": "nested-fragments",
+  "title": "Nested Fragments Demo",
+  "description": "Demonstrates 4 levels of nested fragments: loop > alt > par > opt",
+  "participants": [
+    { "id": "client", "label": "Client", "kind": "actor" },
+    { "id": "gateway", "label": "API Gateway", "kind": "service" },
+    { "id": "auth", "label": "Auth Service", "kind": "service" },
+    { "id": "core", "label": "Core API", "kind": "service" },
+    { "id": "cache", "label": "Cache", "kind": "database" },
+    { "id": "db", "label": "Database", "kind": "database" }
+  ],
+  "events": [
+    {
+      "id": "m1",
+      "type": "message",
+      "from": "client",
+      "to": "gateway",
+      "label": "Request",
+      "messageKind": "sync"
+    },
+    {
+      "id": "a1",
+      "type": "activate",
+      "participant": "gateway"
+    },
+    {
+      "id": "loop1",
+      "type": "fragment",
+      "fragmentKind": "loop",
+      "label": "Retry up to 3 times",
+      "participants": ["gateway", "core"],
+      "branches": [
+        {
+          "id": "retry",
+          "label": "attempt",
+          "events": [
+            {
+              "id": "m2",
+              "type": "message",
+              "from": "gateway",
+              "to": "auth",
+              "label": "Validate JWT",
+              "messageKind": "sync"
+            },
+            {
+              "id": "alt1",
+              "type": "fragment",
+              "fragmentKind": "alt",
+              "label": "Auth result",
+              "participants": ["auth", "core"],
+              "branches": [
+                {
+                  "id": "valid",
+                  "label": "token valid",
+                  "events": [
+                    {
+                      "id": "par1",
+                      "type": "fragment",
+                      "fragmentKind": "par",
+                      "label": "parallel fetch",
+                      "participants": ["core", "cache"],
+                      "branches": [
+                        {
+                          "id": "cache_branch",
+                          "label": "check cache",
+                          "events": [
+                            {
+                              "id": "m3",
+                              "type": "message",
+                              "from": "core",
+                              "to": "cache",
+                              "label": "GET key",
+                              "messageKind": "sync"
+                            },
+                            {
+                              "id": "m4",
+                              "type": "message",
+                              "from": "cache",
+                              "to": "core",
+                              "label": "cache miss",
+                              "messageKind": "return"
+                            }
+                          ]
+                        },
+                        {
+                          "id": "db_branch",
+                          "label": "query db",
+                          "events": [
+                            {
+                              "id": "m5",
+                              "type": "message",
+                              "from": "core",
+                              "to": "db",
+                              "label": "SELECT",
+                              "messageKind": "sync"
+                            },
+                            {
+                              "id": "opt1",
+                              "type": "fragment",
+                              "fragmentKind": "opt",
+                              "label": "log slow query",
+                              "participants": ["db"],
+                              "branches": [
+                                {
+                                  "id": "log",
+                                  "label": "if > 100ms",
+                                  "events": [
+                                    {
+                                      "id": "m6",
+                                      "type": "message",
+                                      "from": "db",
+                                      "to": "core",
+                                      "label": "Result",
+                                      "messageKind": "return"
+                                    },
+                                    {
+                                      "id": "n1",
+                                      "type": "note",
+                                      "text": "Query logged for performance monitoring",
+                                      "over": ["db"],
+                                      "tone": "info"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "id": "m7",
+                              "type": "message",
+                              "from": "db",
+                              "to": "core",
+                              "label": "Result",
+                              "messageKind": "return"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "invalid",
+                  "label": "token invalid",
+                  "events": [
+                    {
+                      "id": "m8",
+                      "type": "message",
+                      "from": "auth",
+                      "to": "gateway",
+                      "label": "401 Unauthorized",
+                      "messageKind": "return",
+                      "status": "error"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "m9",
+      "type": "message",
+      "from": "gateway",
+      "to": "client",
+      "label": "200 OK",
+      "messageKind": "return"
+    },
+    {
+      "id": "d1",
+      "type": "deactivate",
+      "participant": "gateway"
+    }
+  ]
+}

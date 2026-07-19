@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0",
+  "id": "polling-loop",
+  "title": "Polling Loop",
+  "description": "Loop fragment demonstrating repeated polling behavior",
+  "participants": [
+    { "id": "client", "label": "Client", "kind": "actor" },
+    { "id": "server", "label": "Server", "kind": "service" },
+    { "id": "queue", "label": "Job Queue", "kind": "queue" }
+  ],
+  "events": [
+    {
+      "id": "m1",
+      "type": "message",
+      "from": "client",
+      "to": "server",
+      "label": "Submit job",
+      "messageKind": "sync"
+    },
+    {
+      "id": "m2",
+      "type": "message",
+      "from": "server",
+      "to": "queue",
+      "label": "Enqueue job",
+      "messageKind": "sync"
+    },
+    {
+      "id": "a1",
+      "type": "activate",
+      "participant": "client"
+    },
+    {
+      "id": "loop1",
+      "type": "fragment",
+      "fragmentKind": "loop",
+      "label": "Poll every 2s",
+      "participants": ["client", "server"],
+      "branches": [
+        {
+          "id": "iteration",
+          "label": "while job not done",
+          "events": [
+            {
+              "id": "m3",
+              "type": "message",
+              "from": "client",
+              "to": "server",
+              "label": "GET /status",
+              "messageKind": "sync"
+            },
+            {
+              "id": "m4",
+              "type": "message",
+              "from": "server",
+              "to": "client",
+              "label": "202 Pending",
+              "messageKind": "return"
+            },
+            {
+              "id": "div1",
+              "type": "divider",
+              "label": "wait 2 seconds"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "m5",
+      "type": "message",
+      "from": "queue",
+      "to": "server",
+      "label": "Job complete",
+      "messageKind": "async"
+    },
+    {
+      "id": "m6",
+      "type": "message",
+      "from": "server",
+      "to": "client",
+      "label": "200 Done",
+      "messageKind": "return"
+    },
+    {
+      "id": "d1",
+      "type": "deactivate",
+      "participant": "client"
+    }
+  ]
+}

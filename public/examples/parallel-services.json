@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0",
+  "id": "parallel-services",
+  "title": "Parallel Service Calls",
+  "description": "Par fragment showing concurrent service invocations",
+  "participants": [
+    { "id": "client", "label": "Client", "kind": "actor" },
+    { "id": "auth", "label": "Auth Service", "kind": "service" },
+    { "id": "profile", "label": "Profile Service", "kind": "service" },
+    { "id": "notify", "label": "Notification Service", "kind": "service" }
+  ],
+  "events": [
+    {
+      "id": "m1",
+      "type": "message",
+      "from": "client",
+      "to": "auth",
+      "label": "Verify token",
+      "messageKind": "sync"
+    },
+    {
+      "id": "par1",
+      "type": "fragment",
+      "fragmentKind": "par",
+      "label": "Fetch data in parallel",
+      "participants": ["profile", "notify"],
+      "branches": [
+        {
+          "id": "branch1",
+          "label": "fetch profile",
+          "events": [
+            {
+              "id": "m2",
+              "type": "message",
+              "from": "client",
+              "to": "profile",
+              "label": "GET /profile",
+              "messageKind": "sync"
+            },
+            {
+              "id": "m3",
+              "type": "message",
+              "from": "profile",
+              "to": "client",
+              "label": "Profile data",
+              "messageKind": "return"
+            }
+          ]
+        },
+        {
+          "id": "branch2",
+          "label": "send notification",
+          "events": [
+            {
+              "id": "m4",
+              "type": "message",
+              "from": "client",
+              "to": "notify",
+              "label": "Send push",
+              "messageKind": "async"
+            },
+            {
+              "id": "m5",
+              "type": "message",
+              "from": "notify",
+              "to": "client",
+              "label": "Delivered",
+              "messageKind": "return"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "m6",
+      "type": "message",
+      "from": "auth",
+      "to": "client",
+      "label": "Token valid",
+      "messageKind": "return"
+    }
+  ]
+}

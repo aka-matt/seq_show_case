@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sequence Diagram Web Component — Examples</title>
+  <style>
+    /* =========================================================
+       PAGE STYLES — light/dark aware but NOT passed to component
+       ========================================================= */
+    :root {
+      --page-bg: #f8f9fa;
+      --page-surface: #ffffff;
+      --page-text: #212529;
+      --page-text-muted: #6c757d;
+      --page-border: #dee2e6;
+      --page-accent: #0d6efd;
+      --page-accent-hover: #0b5ed7;
+      --page-code-bg: #f1f3f4;
+      --page-danger: #dc3545;
+      --page-success: #198754;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page-bg: #121212;
+        --page-surface: #1e1e1e;
+        --page-text: #e9ecef;
+        --page-text-muted: #adb5bd;
+        --page-border: #343a40;
+        --page-accent: #6ea8fe;
+        --page-accent-hover: #9ec5fe;
+        --page-code-bg: #2d2d2d;
+        --page-danger: #f5a5a5;
+        --page-success: #75b798;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--page-bg);
+      color: var(--page-text);
+      line-height: 1.6;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page-header {
+      max-width: 1100px;
+      margin: 0 auto 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid var(--page-border);
+    }
+    .page-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: var(--page-text-muted);
+      font-size: 1rem;
+    }
+    .page-header .badge-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--page-accent);
+      color: #fff;
+    }
+    .badge.hint {
+      background: var(--page-code-bg);
+      color: var(--page-text);
+      border: 1px solid var(--page-border);
+    }
+
+    /* ---- Section scaffolding ---- */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto 4rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .section-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--page-accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .section-desc {
+      color: var(--page-text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .demo-card {
+      background: var(--page-surface);
+      border: 1px solid var(--page-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .demo-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--page-border);
+      background: var(--page-bg);
+      flex-wrap: wrap;
+    }
+    .demo-toolbar label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--page-text-muted);
+    }
+    .demo-toolbar select,
+    .demo-toolbar button {
+      padding: 0.3rem 0.7rem;
+      border-radius: 4px;
+      border: 1px solid var(--page-border);
+      background: var(--page-surface);
+      color: var(--page-text);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .demo-toolbar select:focus,
+    .demo-toolbar button:focus {
+      outline: 2px solid var(--page-accent);
+      outline-offset: 1px;
+    }
+    .demo-toolbar button {
+      background: var(--page-accent);
+      color: #fff;
+      border-color: var(--page-accent);
+      font-weight: 500;
+    }
+    .demo-toolbar button:hover { background: var(--page-accent-hover); border-color: var(--page-accent-hover); }
+    .demo-toolbar button.danger { background: var(--page-danger); border-color: var(--page-danger); }
+
+    .diagram-wrap {
+      padding: 1rem;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .diagram-wrap sequence-diagram {
+      width: 100%;
+      max-width: 100%;
+      height: 400px;
+      display: block;
+    }
+    .diagram-wrap sequence-diagram.tall { height: 520px; }
+    .diagram-wrap sequence-diagram.short { height: 260px; }
+
+    .event-log {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.78rem;
+      padding: 0.75rem 1rem;
+      background: var(--page-code-bg);
+      border-top: 1px solid var(--page-border);
+      min-height: 60px;
+      max-height: 140px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--page-text);
+    }
+    .event-log:empty::before { content: 'Waiting for events…'; color: var(--page-text-muted); font-style: italic; }
+
+    /* ---- Responsive layout section ---- */
+    .resizable-demo {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .resize-handle {
+      width: 6px;
+      min-height: 200px;
+      background: var(--page-border);
+      border-radius: 3px;
+      cursor: col-resize;
+      flex-shrink: 0;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .resize-handle:hover { background: var(--page-accent); }
+    .resize-container {
+      flex: 1;
+      min-width: 280px;
+    }
+    .size-label {
+      font-size: 0.75rem;
+      color: var(--page-text-muted);
+      margin-top: 0.5rem;
+      text-align: center;
+      font-family: monospace;
+    }
+
+    /* ---- Hostile CSS section ---- */
+    .example-hostile-css {
+      all: initial;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 16px;
+      color: #000;
+      background: repeating-linear-gradient(
+        45deg,
+        #fff,
+        #fff 10px,
+        #f0f0f0 10px,
+        #f0f0f0 20px
+      );
+      padding: 1rem;
+      border: 3px dashed magenta;
+    }
+    .example-hostile-css * { all: unset; }
+    .example-hostile-css div {
+      display: block;
+      margin: 4px 0;
+      padding: 4px;
+      border: 2px solid lime;
+      background: yellow !important;
+      color: navy !important;
+      font-family: 'Times New Roman', serif !important;
+      font-size: 20px !important;
+    }
+    .example-hostile-css button {
+      display: inline-block !important;
+      width: auto !important;
+      height: auto !important;
+      padding: 8px 16px !important;
+      margin: 4px !important;
+      border: 4px solid hotpink !important;
+      border-radius: 0 !important;
+      background: cyan !important;
+      color: black !important;
+      font-size: 18px !important;
+      font-family: 'Courier New', monospace !important;
+      cursor: pointer !important;
+      box-shadow: none !important;
+    }
+    .example-hostile-css button::before {
+      content: 'BUTTON: ' !important;
+      font-weight: bold !important;
+    }
+    .example-hostile-css svg {
+      width: 30px !important;
+      height: 30px !important;
+      display: inline-block !important;
+    }
+    .hostile-caption {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--page-text-muted);
+      font-style: italic;
+    }
+
+    /* ---- Multi-instance grid ---- */
+    .instance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .instance-grid sequence-diagram {
+      height: 220px;
+      display: block;
+      width: 100%;
+    }
+
+    /* ---- Error state ---- */
+    .error-state-demo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* ---- Palette gallery ---- */
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .palette-card {
+      border: 1px solid var(--page-border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .palette-card-header {
+      padding: 0.5rem 0.75rem;
+      background: var(--page-bg);
+      border-bottom: 1px solid var(--page-border);
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .palette-card-header select {
+      padding: 0.15rem 0.4rem;
+      font-size: 0.75rem;
+      border-radius: 3px;
+      border: 1px solid var(--page-border);
+      background: var(--page-surface);
+      color: var(--page-text);
+    }
+    .palette-card sequence-diagram {
+      height: 180px;
+      display: block;
+      width: 100%;
+    }
+
+    /* ---- Divider between sections ---- */
+    hr.section-rule {
+      max-width: 1100px;
+      margin: 0 auto 4rem;
+      border: none;
+      border-top: 1px solid var(--page-border);
+    }
+
+    /* ---- Theme mode row ---- */
+    .theme-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    @media (max-width: 700px) {
+      .theme-row { grid-template-columns: 1fr; }
+      .instance-grid { grid-template-columns: 1fr; }
+    }
+    .theme-cell { text-align: center; }
+    .theme-cell-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--page-text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .theme-cell sequence-diagram {
+      height: 260px;
+      display: block;
+      width: 100%;
+    }
+
+    /* ---- Code block ---- */
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.85em;
+      background: var(--page-code-bg);
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+    }
+
+    /* ---- Footer ---- */
+    .page-footer {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--page-border);
+      color: var(--page-text-muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     PAGE HEADER
+     ================================================================ -->
+<header class="page-header">
+  <h1>Sequence Diagram Web Component</h1>
+  <p>A custom element (&lt;<code>sequence-diagram</code>&gt;) that renders interactive sequence diagrams from JSON data.<br />
+     Uses React + React Flow inside Shadow DOM — zero framework dependencies on the host page.</p>
+  <div class="badge-row">
+    <span class="badge">IIFE + ESM</span>
+    <span class="badge">Shadow DOM</span>
+    <span class="badge">7 Palettes</span>
+    <span class="badge">3 Themes</span>
+    <span class="badge hint">Use <code>npm run dev</code> or <code>npm run serve:dist</code> to start</span>
+  </div>
+</header>
+
+<!-- ================================================================
+     LOAD THE COMPONENT — IIFE (swap with ESM block below if needed)
+     ================================================================ -->
+<script defer src="./dist/sequence-diagram.iife.js"></script>
+
+<!-- ESM alternative (uncomment to use instead of IIFE):
+<script type="module" src="./dist/sequence-diagram.es.js"></script>
+-->
+
+
+<!-- ================================================================
+     SECTION 1 — BASIC USAGE
+     ================================================================ -->
+<section class="section" id="s1-basic">
+  <div class="section-header">
+    <span class="section-number">1</span>
+    <h2 class="section-title">Basic Usage</h2>
+  </div>
+  <p class="section-desc">
+    Pass data via an embedded <code>&lt;script type="application/json"&gt;</code> child.
+    The component auto-detects and parses it. Theme defaults to <strong>system</strong>, palette to <strong>classic</strong>.
+  </p>
+  <div class="demo-card">
+    <div class="diagram-wrap">
+      <sequence-diagram id="basic-demo" height="360px"></sequence-diagram>
+      <script type="application/json">
+      {
+        "schemaVersion": "1.0",
+        "title": "Basic Example",
+        "participants": [
+          { "id": "alice", "label": "Alice" },
+          { "id": "bob",   "label": "Bob" },
+          { "id": "svc",   "label": "Service" }
+        ],
+        "events": [
+          { "id": "e1", "type": "message", "from": "alice", "to": "bob",   "label": "Hello, Bob!", "messageKind": "sync" },
+          { "id": "e2", "type": "message", "from": "bob",   "to": "svc",   "label": "Process", "messageKind": "async" },
+          { "id": "e3", "type": "message", "from": "svc",   "to": "bob",   "label": "Done", "messageKind": "return" },
+          { "id": "e4", "type": "message", "from": "bob",   "to": "alice", "label": "Reply", "messageKind": "sync" }
+        ]
+      }
+      </script>
+    </div>
+  </div>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 2 — PROPERTY API
+     ================================================================ -->
+<section class="section" id="s2-property-api">
+  <div class="section-header">
+    <span class="section-number">2</span>
+    <h2 class="section-title">Property API</h2>
+  </div>
+  <p class="section-desc">
+    Set <code>element.data</code> (object or JSON string) to update the diagram dynamically.
+    The button below replaces the data; after 3 seconds the diagram auto-reverts.
+  </p>
+  <div class="demo-card">
+    <div class="demo-toolbar">
+      <label for="api-diagram-mode">Palette:</label>
+      <select id="api-diagram-mode">
+        <option value="classic">classic</option>
+        <option value="ocean">ocean</option>
+        <option value="forest">forest</option>
+        <option value="violet">violet</option>
+        <option value="sunset">sunset</option>
+        <option value="rose">rose</option>
+        <option value="slate">slate</option>
+      </select>
+      <button id="btn-load-other">Load Other Data</button>
+      <button id="btn-reset-api">Reset</button>
+    </div>
+    <div class="diagram-wrap">
+      <sequence-diagram id="api-demo" palette="ocean" height="360px"></sequence-diagram>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const initialData = {
+        schemaVersion: "1.0",
+        participants: [
+          { id: "c", label: "Client" },
+          { id: "s", label: "Server" }
+        ],
+        events: [
+          { id: "m1", type: "message", from: "c", to: "s", label: "Initial request", messageKind: "sync" }
+        ]
+      };
+      const otherData = {
+        schemaVersion: "1.0",
+        participants: [
+          { id: "p1", label: "Producer" },
+          { id: "q",  label: "Queue" },
+          { id: "p2", label: "Consumer" }
+        ],
+        events: [
+          { id: "m1", type: "message", from: "p1", to: "q",  label: "Publish event",  messageKind: "async" },
+          { id: "m2", type: "message", from: "q",  to: "p2", label: "Deliver event",  messageKind: "sync" },
+          { id: "m3", type: "message", from: "p2", to: "q",  label: "ACK",            messageKind: "return" }
+        ]
+      };
+      const el = document.getElementById('api-demo');
+      el.data = initialData;
+
+      document.getElementById('btn-load-other').addEventListener('click', () => {
+        el.data = otherData;
+        // Auto-reset after 3s
+        setTimeout(() => { el.data = initialData; }, 3000);
+      });
+      document.getElementById('btn-reset-api').addEventListener('click', () => {
+        el.data = initialData;
+      });
+    })();
+  </script>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 3 — THEME MODES
+     ================================================================ -->
+<section class="section" id="s3-themes">
+  <div class="section-header">
+    <span class="section-number">3</span>
+    <h2 class="section-title">Theme Modes</h2>
+  </div>
+  <p class="section-desc">
+    Three instances with <code>theme</code> set to <strong>light</strong>, <strong>dark</strong>, and <strong>system</strong>
+    (follows your OS preference). All share the same palette (<strong>ocean</strong>) for fair comparison.
+  </p>
+  <div class="demo-card">
+    <div class="theme-row">
+      <div class="theme-cell">
+        <div class="theme-cell-label">Light</div>
+        <sequence-diagram theme="light" palette="ocean" height="260px"></sequence-diagram>
+        <script type="application/json">
+        {
+          "schemaVersion": "1.0",
+          "participants": [
+            { "id": "u", "label": "User" },
+            { "id": "w", "label": "Web" },
+            { "id": "a", "label": "API" }
+          ],
+          "events": [
+            { "id": "m1", "type": "message", "from": "u", "to": "w", "label": "Login", "messageKind": "sync" },
+            { "id": "m2", "type": "message", "from": "w", "to": "a", "label": "Authenticate", "messageKind": "sync" },
+            { "id": "m3", "type": "message", "from": "a", "to": "w", "label": "Token", "messageKind": "return" },
+            { "id": "m4", "type": "message", "from": "w", "to": "u", "label": "OK", "messageKind": "return" }
+          ]
+        }
+        </script>
+      </div>
+      <div class="theme-cell">
+        <div class="theme-cell-label">Dark</div>
+        <sequence-diagram theme="dark" palette="ocean" height="260px"></sequence-diagram>
+        <script type="application/json">
+        {
+          "schemaVersion": "1.0",
+          "participants": [
+            { "id": "u", "label": "User" },
+            { "id": "w", "label": "Web" },
+            { "id": "a", "label": "API" }
+          ],
+          "events": [
+            { "id": "m1", "type": "message", "from": "u", "to": "w", "label": "Login", "messageKind": "sync" },
+            { "id": "m2", "type": "message", "from": "w", "to": "a", "label": "Authenticate", "messageKind": "sync" },
+            { "id": "m3", "type": "message", "from": "a", "to": "w", "label": "Token", "messageKind": "return" },
+            { "id": "m4", "type": "message", "from": "w", "to": "u", "label": "OK", "messageKind": "return" }
+          ]
+        }
+        </script>
+      </div>
+      <div class="theme-cell">
+        <div class="theme-cell-label">System</div>
+        <sequence-diagram theme="system" palette="ocean" height="260px"></sequence-diagram>
+        <script type="application/json">
+        {
+          "schemaVersion": "1.0",
+          "participants": [
+            { "id": "u", "label": "User" },
+            { "id": "w", "label": "Web" },
+            { "id": "a", "label": "API" }
+          ],
+          "events": [
+            { "id": "m1", "type": "message", "from": "u", "to": "w", "label": "Login", "messageKind": "sync" },
+            { "id": "m2", "type": "message", "from": "w", "to": "a", "label": "Authenticate", "messageKind": "sync" },
+            { "id": "m3", "type": "message", "from": "a", "to": "w", "label": "Token", "messageKind": "return" },
+            { "id": "m4", "type": "message", "from": "w", "to": "u", "label": "OK", "messageKind": "return" }
+          ]
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 4 — PALETTE GALLERY
+     ================================================================ -->
+<section class="section" id="s4-palettes">
+  <div class="section-header">
+    <span class="section-number">4</span>
+    <h2 class="section-title">Palette Gallery</h2>
+  </div>
+  <p class="section-desc">
+    All 7 built-in palettes. Use the per-instance dropdown to switch any diagram's palette at runtime.
+  </p>
+  <div class="demo-card">
+    <div class="palette-grid" id="palette-gallery">
+      <!-- Populated by JS below -->
+    </div>
+  </div>
+  <script>
+    (() => {
+      const palettes = ['classic', 'ocean', 'forest', 'violet', 'sunset', 'rose', 'slate'];
+      const data = {
+        schemaVersion: "1.0",
+        participants: [
+          { id: "a", label: "A" }, { id: "b", label: "B" },
+          { id: "c", label: "C" }
+        ],
+        events: [
+          { id: "m1", type: "message", from: "a", to: "b", label: "Request", messageKind: "sync" },
+          { id: "m2", type: "message", from: "b", to: "c", label: "Forward", messageKind: "async" },
+          { id: "m3", type: "message", from: "c", to: "b", label: "Response", messageKind: "return" },
+          { id: "m4", type: "message", from: "b", to: "a", label: "Done", messageKind: "return" }
+        ]
+      };
+      const container = document.getElementById('palette-gallery');
+      palettes.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'palette-card';
+        card.innerHTML = `
+          <div class="palette-card-header">
+            <span>${p}</span>
+            <select data-id-prefix="${p}">
+              ${palettes.map(pal => `<option value="${pal}" ${pal === p ? 'selected' : ''}>${pal}</option>`).join('')}
+            </select>
+          </div>
+          <sequence-diagram palette="${p}" height="180px"></sequence-diagram>
+          <script type="application/json">${JSON.stringify(data)}<\/script>
+        `;
+        container.appendChild(card);
+        card.querySelector('select').addEventListener('change', e => {
+          card.querySelector('sequence-diagram').palette = e.target.value;
+        });
+      });
+    })();
+  </script>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 5 — SEQUENCE FEATURES
+     ================================================================ -->
+<section class="section" id="s5-features">
+  <div class="section-header">
+    <span class="section-number">5</span>
+    <h2 class="section-title">Sequence Features</h2>
+  </div>
+  <p class="section-desc">
+    Sync, async, return, self-call, note, activation, divider, and all fragment kinds.
+    All loaded from <code>public/examples/*.json</code>.
+  </p>
+
+  <!-- 5a: Messages + activations -->
+  <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem;">Sync, Async, Return &amp; Self-Call + Activations</h3>
+  <div class="demo-card" style="margin-bottom:1.5rem;">
+    <div class="demo-toolbar">
+      <label>Load example:</label>
+      <select id="feature-select-1">
+        <option value="basic">basic.json</option>
+        <option value="checkout-alt">checkout-alt.json</option>
+        <option value="polling-loop">polling-loop.json</option>
+        <option value="parallel-services">parallel-services.json</option>
+        <option value="nested-fragments">nested-fragments.json</option>
+      </select>
+    </div>
+    <div class="diagram-wrap">
+      <sequence-diagram id="feature-demo-1" palette="ocean" height="400px"></sequence-diagram>
+    </div>
+  </div>
+
+  <!-- 5b: Features showcase (all-in-one) -->
+  <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem;">All Features in One Diagram</h3>
+  <div class="demo-card">
+    <div class="diagram-wrap">
+      <sequence-diagram id="feature-demo-2" palette="forest" height="520px"></sequence-diagram>
+      <script type="application/json">
+      {
+        "schemaVersion": "1.0",
+        "title": "All Features Showcase",
+        "participants": [
+          { "id": "usr",  "label": "User",   "kind": "actor" },
+          { "id": "app",  "label": "App",    "kind": "service" },
+          { "id": "svc",  "label": "Service", "kind": "service" },
+          { "id": "db",   "label": "DB",     "kind": "database" }
+        ],
+        "events": [
+          { "id": "e0",  "type": "message",  "from": "usr", "to": "app",  "label": "Submit form",       "messageKind": "sync" },
+          { "id": "e1",  "type": "message",  "from": "app", "to": "svc",  "label": "Process (sync)",   "messageKind": "sync" },
+          { "id": "e2",  "type": "message",  "from": "app", "to": "svc",  "label": "Email (async)",    "messageKind": "async" },
+          { "id": "a1",  "type": "activate", "participant": "svc" },
+          { "id": "e3",  "type": "message",  "from": "svc", "to": "db",   "label": "INSERT",          "messageKind": "sync" },
+          { "id": "e4",  "type": "message",  "from": "db",  "to": "svc",  "label": "OK",              "messageKind": "return" },
+          { "id": "n1",  "type": "note",     "text": "This is a note spanning app and svc", "over": ["app", "svc"], "placement": "right", "tone": "info" },
+          { "id": "e5",  "type": "message",  "from": "svc", "to": "app",  "label": "Result",          "messageKind": "return" },
+          { "id": "dv1", "type": "divider",  "label": "--- processing complete ---" },
+          { "id": "e6",  "type": "message",  "from": "app", "to": "usr",  "label": "Done",            "messageKind": "sync" },
+          { "id": "sc1", "type": "message",  "from": "app", "to": "app",  "label": "Local validation", "messageKind": "sync" },
+          { "id": "d1",  "type": "deactivate", "participant": "svc" }
+        ]
+      }
+      </script>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const select = document.getElementById('feature-select-1');
+      const el = document.getElementById('feature-demo-1');
+      // Paths relative to the page — works when example.html is served from project root or dist/
+      const files = {
+        'basic':             './examples/basic.json',
+        'checkout-alt':      './examples/checkout-alt.json',
+        'polling-loop':      './examples/polling-loop.json',
+        'parallel-services': './examples/parallel-services.json',
+        'nested-fragments':  './examples/nested-fragments.json'
+      };
+      function load(name) {
+        fetch(files[name])
+          .then(r => r.json())
+          .then(d => { el.data = d; })
+          .catch(e => console.error('Failed to load', name, e));
+      }
+      select.addEventListener('change', e => load(e.target.value));
+      load('basic');
+    })();
+  </script>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 6 — EVENTS
+     ================================================================ -->
+<section class="section" id="s6-events">
+  <div class="section-header">
+    <span class="section-number">6</span>
+    <h2 class="section-title">Events</h2>
+  </div>
+  <p class="section-desc">
+    Click any message arrow or participant header. The component dispatches DOM events
+    (<strong>sequence-message-click</strong>, <strong>sequence-participant-click</strong>, <strong>sequence-fragment-click</strong>).
+    Event detail is formatted as JSON below.
+  </p>
+  <div class="demo-card">
+    <div class="demo-toolbar">
+      <label>Last event:</label>
+      <span id="event-type-label" style="font-size:0.85rem;color:var(--page-text-muted);">—</span>
+    </div>
+    <div class="diagram-wrap">
+      <sequence-diagram id="events-demo" palette="sunset" height="360px"></sequence-diagram>
+      <script type="application/json">
+      {
+        "schemaVersion": "1.0",
+        "participants": [
+          { "id": "c", "label": "Client" },
+          { "id": "s", "label": "Server" }
+        ],
+        "events": [
+          { "id": "m1", "type": "message", "from": "c", "to": "s", "label": "GET /data",  "messageKind": "sync" },
+          { "id": "m2", "type": "message", "from": "s", "to": "c", "label": "200 OK",     "messageKind": "return" },
+          { "id": "m3", "type": "message", "from": "c", "to": "c", "label": "Cache check", "messageKind": "sync" },
+          { "id": "m4", "type": "message", "from": "c", "to": "s", "label": "POST /data",  "messageKind": "async" }
+        ]
+      }
+      </script>
+    </div>
+    <div class="event-log" id="event-log"></div>
+  </div>
+  <script>
+    (() => {
+      const log = document.getElementById('event-log');
+      const label = document.getElementById('event-type-label');
+      const el = document.getElementById('events-demo');
+
+      function logEvent(e) {
+        const detail = e.detail || {};
+        label.textContent = e.type.replace('sequence-', '');
+        log.textContent = JSON.stringify(detail, null, 2);
+      }
+
+      el.addEventListener('sequence-message-click',       logEvent);
+      el.addEventListener('sequence-participant-click',   logEvent);
+      el.addEventListener('sequence-fragment-click',       logEvent);
+      el.addEventListener('sequence-ready',                e => { label.textContent = 'ready'; log.textContent = '(component ready)'; });
+      el.addEventListener('sequence-error',                logEvent);
+    })();
+  </script>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 7 — RESPONSIVE LAYOUT
+     ================================================================ -->
+<section class="section" id="s7-responsive">
+  <div class="section-header">
+    <span class="section-number">7</span>
+    <h2 class="section-title">Responsive Layout</h2>
+  </div>
+  <p class="section-desc">
+    Drag the resize handle to change the diagram width. The component uses
+    <code>ResizeObserver</code> internally and re-fits the viewport on resize.
+  </p>
+  <div class="demo-card">
+    <div class="resizable-demo">
+      <div class="resize-handle" id="resize-handle"></div>
+      <div class="resize-container" id="resize-container">
+        <sequence-diagram id="responsive-demo" palette="violet" height="320px"></sequence-diagram>
+        <script type="application/json">
+        {
+          "schemaVersion": "1.0",
+          "participants": [
+            { "id": "a", "label": "A" }, { "id": "b", "label": "B" },
+            { "id": "c", "label": "C" }, { "id": "d", "label": "D" }
+          ],
+          "events": [
+            { "id": "m1", "type": "message", "from": "a", "to": "b", "label": "Request",  "messageKind": "sync" },
+            { "id": "m2", "type": "message", "from": "b", "to": "c", "label": "Process",   "messageKind": "sync" },
+            { "id": "m3", "type": "message", "from": "c", "to": "d", "label": "Persist",   "messageKind": "sync" },
+            { "id": "m4", "type": "message", "from": "d", "to": "c", "label": "OK",         "messageKind": "return" },
+            { "id": "m5", "type": "message", "from": "c", "to": "b", "label": "Done",       "messageKind": "return" },
+            { "id": "m6", "type": "message", "from": "b", "to": "a", "label": "Result",     "messageKind": "return" }
+          ]
+        }
+        </script>
+        <div class="size-label" id="size-label">width: 100%</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const handle = document.getElementById('resize-handle');
+      const container = document.getElementById('resize-container');
+      const label = document.getElementById('size-label');
+      let isDragging = false;
+      let startX = 0, startW = 0;
+
+      handle.addEventListener('mousedown', e => {
+        isDragging = true;
+        startX = e.clientX;
+        startW = container.offsetWidth;
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        const delta = e.clientX - startX;
+        const newW = Math.max(280, startW + delta);
+        container.style.width = newW + 'px';
+        label.textContent = `width: ${newW}px`;
+      });
+      document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        // Trigger fitView after resize
+        const el = document.getElementById('responsive-demo');
+        if (el.fitView) el.fitView({ padding: 0.2 });
+      });
+    })();
+  </script>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 8 — CSS ISOLATION
+     ================================================================ -->
+<section class="section" id="s8-css-isolation">
+  <div class="section-header">
+    <span class="section-number">8</span>
+    <h2 class="section-title">CSS Isolation</h2>
+  </div>
+  <p class="section-desc">
+    The component is wrapped in a hostile host environment: aggressive CSS reset, Comic Sans,
+    bright background stripes, lime/pink borders, <code>all: unset</code> on all children, and small SVGs.
+    Shadow DOM must protect the component internals.
+  </p>
+  <div class="demo-card">
+    <div style="padding:1rem;">
+      <div class="example-hostile-css">
+        <div>
+          <sequence-diagram id="hostile-css-demo" palette="rose" height="280px"></sequence-diagram>
+          <script type="application/json">
+          {
+            "schemaVersion": "1.0",
+            "participants": [
+              { "id": "x", "label": "X" }, { "id": "y", "label": "Y" }
+            ],
+            "events": [
+              { "id": "m1", "type": "message", "from": "x", "to": "y", "label": "Hello",  "messageKind": "sync" },
+              { "id": "m2", "type": "message", "from": "y", "to": "x", "label": "World",   "messageKind": "return" }
+            ]
+          }
+          </script>
+        </div>
+        <button>HOSTILE BUTTON</button>
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="red"/></svg>
+      </div>
+      <p class="hostile-caption">The component inside the hostile CSS block above should render correctly.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 9 — ERROR HANDLING
+     ================================================================ -->
+<section class="section" id="s9-error">
+  <div class="section-header">
+    <span class="section-number">9</span>
+    <h2 class="section-title">Error Handling</h2>
+  </div>
+  <p class="section-desc">
+    Clicking the button sets <code>data</code> to an invalid diagram (unknown participant reference).
+    The component catches the error, renders an error state, and fires <code>sequence-error</code>.
+  </p>
+  <div class="demo-card">
+    <div class="demo-toolbar">
+      <button id="btn-bad-data" class="danger">Load Invalid Data</button>
+      <span id="error-summary" style="font-size:0.85rem;color:var(--page-danger);"></span>
+    </div>
+    <div class="diagram-wrap">
+      <sequence-diagram id="error-demo" palette="slate" height="280px"></sequence-diagram>
+      <script type="application/json">
+      {
+        "schemaVersion": "1.0",
+        "participants": [{ "id": "g", "label": "Good" }],
+        "events": [{ "id": "m1", "type": "message", "from": "g", "to": "g", "label": "Valid", "messageKind": "sync" }]
+      }
+      </script>
+    </div>
+    <div class="event-log" id="error-log"></div>
+  </div>
+  <script>
+    (() => {
+      const badData = {
+        schemaVersion: "1.0",
+        participants: [
+          { id: "p1", label: "P1" },
+          { id: "p2", label: "P2" }
+        ],
+        events: [
+          { id: "m1", type: "message", from: "p1", to: "ghost", label: "To unknown", messageKind: "sync" }
+        ]
+      };
+      const el = document.getElementById('error-demo');
+      const log = document.getElementById('error-log');
+      const summary = document.getElementById('error-summary');
+
+      el.addEventListener('sequence-error', e => {
+        const errs = e.detail?.errors || [];
+        if (errs.length) {
+          summary.textContent = errs[0].message || errs[0].code;
+          log.textContent = JSON.stringify(e.detail, null, 2);
+        }
+      });
+      el.addEventListener('sequence-ready', () => { summary.textContent = ''; log.textContent = ''; });
+
+      document.getElementById('btn-bad-data').addEventListener('click', () => {
+        el.data = badData;
+      });
+    })();
+  </script>
+</section>
+
+<hr class="section-rule" />
+
+
+<!-- ================================================================
+     SECTION 10 — MULTIPLE INSTANCES
+     ================================================================ -->
+<section class="section" id="s10-multi">
+  <div class="section-header">
+    <span class="section-number">10</span>
+    <h2 class="section-title">Multiple Instances</h2>
+  </div>
+  <p class="section-desc">
+    Six independent instances on the same page. Each owns its own Shadow DOM, state, and events.
+    Changing one does not affect the others.
+  </p>
+  <div class="demo-card">
+    <div class="instance-grid" id="multi-grid">
+      <!-- Instances injected by JS -->
+    </div>
+  </div>
+  <script>
+    (() => {
+      const configs = [
+        { id: 'm1', theme: 'light',   palette: 'classic', w: 300, h: 220 },
+        { id: 'm2', theme: 'dark',   palette: 'ocean',   w: 300, h: 220 },
+        { id: 'm3', theme: 'system', palette: 'forest',  w: 300, h: 220 },
+        { id: 'm4', theme: 'light',  palette: 'violet',  w: 300, h: 220 },
+        { id: 'm5', theme: 'dark',   palette: 'sunset',  w: 300, h: 220 },
+        { id: 'm6', theme: 'system', palette: 'rose',    w: 300, h: 220 },
+      ];
+      const miniData = (label) => ({
+        schemaVersion: "1.0",
+        participants: [
+          { id: "a", label: "A" },
+          { id: "b", label: "B" },
+          { id: "c", label: "C" }
+        ],
+        events: [
+          { id: "e1", type: "message", from: "a", to: "b", label: "Msg 1", messageKind: "sync" },
+          { id: "e2", type: "message", from: "b", to: "c", label: "Msg 2", messageKind: "async" },
+          { id: "e3", type: "message", from: "c", to: "a", label: "Msg 3", messageKind: "return" }
+        ]
+      });
+
+      const grid = document.getElementById('multi-grid');
+      configs.forEach(cfg => {
+        const el = document.createElement('sequence-diagram');
+        el.id = cfg.id;
+        el.setAttribute('theme', cfg.theme);
+        el.setAttribute('palette', cfg.palette);
+        el.style.height = cfg.h + 'px';
+        el.data = miniData(cfg.id);
+        grid.appendChild(el);
+      });
+    })();
+  </script>
+</section>
+
+
+<!-- ================================================================
+     PAGE FOOTER
+     ================================================================ -->
+<footer class="page-footer">
+  <p>
+    Sequence Diagram Web Component &mdash; built with TypeScript + React + React Flow.<br />
+    <code>npm run dev</code> (dev server) &nbsp;&middot;&nbsp; <code>npm run serve:dist</code> (static build)
+  </p>
+</footer>
+
+</body>
+</html>
