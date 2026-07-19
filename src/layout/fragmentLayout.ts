@@ -3,9 +3,9 @@
  * All functions are React-independent — pure TypeScript only.
  */
 
-import type { NormalizedData, NormalizedFragmentEvent } from "../model/normalized-types";
-import type { LayoutFragment, LayoutBranch, LayoutParticipant, LayoutRow } from "./layout-types";
-import { DEFAULT_LAYOUT } from "./tokens";
+import type { NormalizedData, NormalizedFragmentEvent } from '../model/normalized-types';
+import type { LayoutFragment, LayoutBranch, LayoutParticipant, LayoutRow } from './layout-types';
+import { DEFAULT_LAYOUT } from './tokens';
 
 // ---------------------------------------------------------------------------
 // Fragment layout
@@ -30,7 +30,15 @@ export function calculateFragmentLayout(
   }
 
   // Process fragments from normalized data
-  processFragments(normalizedData.events, rows, rowYPositions, participantIndex, fragments, branches, participants);
+  processFragments(
+    normalizedData.events,
+    rows,
+    rowYPositions,
+    participantIndex,
+    fragments,
+    branches,
+    participants
+  );
 
   return { fragments, branches };
 }
@@ -40,7 +48,7 @@ export function calculateFragmentLayout(
 // ---------------------------------------------------------------------------
 
 function processFragments(
-  events: NormalizedData["events"],
+  events: NormalizedData['events'],
   rows: LayoutRow[],
   rowYPositions: number[],
   participantIndex: Map<string, number>,
@@ -49,19 +57,19 @@ function processFragments(
   allParticipants: LayoutParticipant[]
 ): void {
   for (const event of events) {
-    if (event.type === "fragment") {
+    if (event.type === 'fragment') {
       const fragment = event as NormalizedFragmentEvent;
 
       // Find fragment header row
       const headerRowIndex = rows.findIndex(
-        (r) => r.sourceEventId === fragment.id && r.kind === "fragment-header"
+        r => r.sourceEventId === fragment.id && r.kind === 'fragment-header'
       );
 
       if (headerRowIndex === -1) continue;
 
       // Determine which participants this fragment spans
       const fragmentParticipants = fragment.participants ?? [];
-      const participantIndices = fragmentParticipants.map((pid) => participantIndex.get(pid) ?? 0);
+      const participantIndices = fragmentParticipants.map(pid => participantIndex.get(pid) ?? 0);
       const startParticipantIndex = Math.min(...participantIndices);
       const endParticipantIndex = Math.max(...participantIndices);
 
@@ -71,10 +79,11 @@ function processFragments(
       if (!startParticipant || !endParticipant) continue;
 
       const headerY = rowYPositions[headerRowIndex] ?? 0;
-      const headerHeight = rows[headerRowIndex]?.estimatedHeight ?? DEFAULT_LAYOUT.fragmentPaddingTop;
+      const headerHeight =
+        rows[headerRowIndex]?.estimatedHeight ?? DEFAULT_LAYOUT.fragmentPaddingTop;
 
       // Find all rows that belong to this fragment
-      const fragmentRows = rows.filter((r) => r.fragmentId === fragment.id);
+      const fragmentRows = rows.filter(r => r.fragmentId === fragment.id);
       const lastFragmentRow = fragmentRows[fragmentRows.length - 1];
       const fragmentEndRowIndex = lastFragmentRow
         ? rows.lastIndexOf(lastFragmentRow)
@@ -96,9 +105,10 @@ function processFragments(
         fragmentEventId: fragment.id,
         fragmentKind: fragment.fragmentKind,
         x,
-        y: headerY - DEFAULT_LAYOUT.fragmentPaddingTop,
+        // Do not extend into the preceding row/component.
+        y: headerY,
         width,
-        height: fragmentHeight + DEFAULT_LAYOUT.fragmentPaddingTop + DEFAULT_LAYOUT.fragmentPaddingBottom,
+        height: fragmentHeight + DEFAULT_LAYOUT.fragmentPaddingBottom,
         depth: rows[headerRowIndex]?.depth ?? 0,
         participants: fragmentParticipants,
         ...(fragment.label !== undefined && { label: fragment.label }),
@@ -109,7 +119,7 @@ function processFragments(
       let branchY = headerY + headerHeight;
       for (const branch of fragment.branches) {
         const branchHeaderRowIndex = rows.findIndex(
-          (r) => r.sourceEventId === branch.id && r.kind === "branch-header"
+          r => r.sourceEventId === branch.id && r.kind === 'branch-header'
         );
 
         if (branchHeaderRowIndex === -1) continue;
@@ -117,9 +127,7 @@ function processFragments(
         const branchHeaderY = rowYPositions[branchHeaderRowIndex] ?? branchY;
 
         // Find rows belonging to this branch
-        const branchRows = rows.filter(
-          (r) => r.branchId === branch.id && r.kind !== "branch-header"
-        );
+        const branchRows = rows.filter(r => r.branchId === branch.id && r.kind !== 'branch-header');
         const lastBranchRow = branchRows[branchRows.length - 1];
         const branchEndRowIndex = lastBranchRow
           ? rows.lastIndexOf(lastBranchRow)
@@ -145,7 +153,15 @@ function processFragments(
 
       // Recurse into nested fragments
       for (const branch of fragment.branches) {
-        processFragments(branch.events, rows, rowYPositions, participantIndex, fragments, branches, allParticipants);
+        processFragments(
+          branch.events,
+          rows,
+          rowYPositions,
+          participantIndex,
+          fragments,
+          branches,
+          allParticipants
+        );
       }
     }
   }
@@ -158,7 +174,7 @@ export function getFragmentParticipantRange(
   fragment: NormalizedFragmentEvent,
   participantIndex: Map<string, number>
 ): { startIndex: number; endIndex: number } {
-  const indices = fragment.participants.map((pid) => participantIndex.get(pid) ?? 0);
+  const indices = fragment.participants.map(pid => participantIndex.get(pid) ?? 0);
   return {
     startIndex: Math.min(...indices),
     endIndex: Math.max(...indices),

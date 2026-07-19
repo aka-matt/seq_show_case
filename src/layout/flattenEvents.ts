@@ -101,7 +101,9 @@ function flattenRecursive(
           kind: 'fragment-header',
           depth,
           sourceEventId: fragment.id,
-          estimatedHeight: DEFAULT_LAYOUT.fragmentPaddingTop + DEFAULT_LAYOUT.branchHeaderHeight,
+          // The title is drawn above the frame, so no extra top-padding row
+          // is needed inside the fragment.
+          estimatedHeight: DEFAULT_LAYOUT.branchHeaderHeight,
           fragmentId: fragment.id,
         };
         rows.push(headerRow);

@@ -19,19 +19,32 @@ export interface NoteOverlayProps {
 
 const TONE_STYLES: Record<
   LayoutNote['tone'],
-  { bgVar: string; borderVar: string; textVar: string }
+  { background: string; borderVar: string; textVar: string }
 > = {
-  info: { bgVar: '--sd-accent-soft', borderVar: '--sd-accent', textVar: '--sd-accent' },
-  success: { bgVar: '--sd-success', borderVar: '--sd-success', textVar: '--sd-success' },
-  warning: { bgVar: '--sd-warning', borderVar: '--sd-warning', textVar: '--sd-warning' },
-  error: { bgVar: '--sd-error', borderVar: '--sd-error', textVar: '--sd-error' },
-  neutral: { bgVar: '--sd-surface-muted', borderVar: '--sd-border', textVar: '--sd-text' },
+  info: { background: 'var(--sd-accent-soft)', borderVar: '--sd-accent', textVar: '--sd-accent' },
+  success: {
+    background: 'color-mix(in srgb, var(--sd-success) 16%, var(--sd-surface))',
+    borderVar: '--sd-success',
+    textVar: '--sd-success',
+  },
+  warning: {
+    background: 'color-mix(in srgb, var(--sd-warning) 16%, var(--sd-surface))',
+    borderVar: '--sd-warning',
+    textVar: '--sd-text',
+  },
+  error: {
+    background: 'color-mix(in srgb, var(--sd-error) 16%, var(--sd-surface))',
+    borderVar: '--sd-error',
+    textVar: '--sd-error',
+  },
+  neutral: {
+    background: 'var(--sd-surface-muted)',
+    borderVar: '--sd-border',
+    textVar: '--sd-text',
+  },
 };
 
-function NoteOverlayComponent({
-  notes,
-  onNoteClick,
-}: NoteOverlayProps): React.ReactElement | null {
+function NoteOverlayComponent({ notes, onNoteClick }: NoteOverlayProps): React.ReactElement | null {
   if (notes.length === 0) return null;
 
   return (
@@ -47,12 +60,12 @@ function NoteOverlayComponent({
           zIndex: 6,
         }}
       >
-        {notes.map((note) => {
+        {notes.map(note => {
           const tone = TONE_STYLES[note.tone] ?? TONE_STYLES.neutral;
           return (
             <div
               key={`note-${note.eventId}`}
-              onClick={(e) => {
+              onClick={e => {
                 // Restore pointer-events for clickable notes
                 e.stopPropagation();
                 onNoteClick?.(note.eventId);
@@ -63,7 +76,7 @@ function NoteOverlayComponent({
                 top: note.y,
                 width: note.width,
                 minHeight: note.height,
-                backgroundColor: `var(${tone.bgVar})`,
+                backgroundColor: tone.background,
                 border: `1px solid var(${tone.borderVar})`,
                 borderRadius: 6,
                 padding: '6px 10px',

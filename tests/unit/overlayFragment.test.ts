@@ -127,6 +127,11 @@ describe('Fragment Layout', () => {
       expect(fragment.participants).toEqual(['p1', 'p2']);
       expect(fragment.width).toBeGreaterThan(0);
       expect(fragment.height).toBeGreaterThan(0);
+
+      const headerRow = layout.rows.findIndex(row => row.sourceEventId === 'frag1');
+      const firstBranch = layout.branches.find(branch => branch.branchId === 'b1')!;
+      expect(fragment.y).toBe(layout.rowYPositions[headerRow]);
+      expect(firstBranch.y - fragment.y).toBeLessThanOrEqual(32);
     });
 
     it('should create branch separators', () => {

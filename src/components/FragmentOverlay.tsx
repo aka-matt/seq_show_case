@@ -116,14 +116,13 @@ function FragmentBox({
   const [hovered, setHovered] = useState(false);
   const styles = FRAGMENT_STYLES[fragment.fragmentKind] ?? FRAGMENT_STYLES.alt;
   const fadesUntilHovered = ['alt', 'opt', 'loop', 'par'].includes(fragment.fragmentKind);
-  const fill =
-    fadesUntilHovered && !hovered
-      ? `color-mix(in srgb, var(${styles.bgVar}) 22%, transparent)`
-      : `var(${styles.bgVar})`;
-  const headerFill =
-    fadesUntilHovered && !hovered
-      ? `color-mix(in srgb, var(${styles.headerBgVar}) 45%, transparent)`
-      : `var(${styles.headerBgVar})`;
+  // Hover strengthens the tint without hiding messages and lifelines.
+  const fill = fadesUntilHovered
+    ? `color-mix(in srgb, var(${styles.borderVar}) ${hovered ? 22 : 8}%, transparent)`
+    : `var(${styles.bgVar})`;
+  const headerFill = fadesUntilHovered
+    ? `color-mix(in srgb, var(${styles.headerBgVar}) ${hovered ? 55 : 35}%, transparent)`
+    : `var(${styles.headerBgVar})`;
 
   return (
     <div
@@ -151,7 +150,7 @@ function FragmentBox({
         }}
         style={{
           position: 'absolute',
-          top: -14,
+          top: 0,
           left: 12,
           backgroundColor: headerFill,
           border: `1px solid var(${styles.borderVar})`,
