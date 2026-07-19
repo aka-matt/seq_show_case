@@ -51,7 +51,8 @@ export interface ApplyThemeOptions {
  */
 export function applyTheme(options: ApplyThemeOptions): void {
   const { host, mode, palette, hostOverrides = {} } = options;
-  const { tokens } = resolveTheme(mode, palette);
+  const resolvedTheme = resolveTheme(mode, palette);
+  const { tokens } = resolvedTheme;
 
   // Apply each token as a CSS variable
   for (const [token, cssVar] of Object.entries(CSS_VAR_MAP)) {
@@ -65,9 +66,9 @@ export function applyTheme(options: ApplyThemeOptions): void {
   }
 
   // Set data attributes for CSS targeting
-  const resolvedTheme = resolveTheme(mode, palette);
   host.dataset.theme = resolvedTheme.mode;
   host.dataset.palette = palette;
+  host.style.colorScheme = resolvedTheme.mode;
 }
 
 /**
@@ -82,6 +83,7 @@ export function removeTheme(host: HTMLElement): void {
   // Remove data attributes
   delete host.dataset.theme;
   delete host.dataset.palette;
+  host.style.removeProperty('color-scheme');
 }
 
 /**

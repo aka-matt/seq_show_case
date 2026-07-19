@@ -4,10 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import {
-  palettes,
-  type PaletteName,
-} from '../../src/theme/palettes';
+import { palettes, type PaletteName } from '../../src/theme/palettes';
 import {
   resolveMode,
   resolveTheme,
@@ -32,7 +29,9 @@ import type { PaletteTokens } from '../../src/theme/tokens';
 const mockMatchMedia = (matches: boolean) => {
   const listeners: Array<(e: { matches: boolean }) => void> = [];
   return {
-    get matches() { return matches; },
+    get matches() {
+      return matches;
+    },
     addEventListener: (_: string, handler: (e: { matches: boolean }) => void) => {
       listeners.push(handler);
     },
@@ -64,7 +63,15 @@ describe('palettes', () => {
     'shadow',
   ];
 
-  const ALL_PALETTE_NAMES: PaletteName[] = ['classic', 'ocean', 'forest', 'violet', 'sunset', 'rose', 'slate'];
+  const ALL_PALETTE_NAMES: PaletteName[] = [
+    'classic',
+    'ocean',
+    'forest',
+    'violet',
+    'sunset',
+    'rose',
+    'slate',
+  ];
 
   it('has all 7 palette names', () => {
     expect(Object.keys(palettes)).toHaveLength(7);
@@ -359,6 +366,7 @@ describe('applyTheme', () => {
 
     expect(host.dataset.theme).toBe('dark');
     expect(host.dataset.palette).toBe('ocean');
+    expect(host.style.colorScheme).toBe('dark');
   });
 
   it('applies dark tokens when mode is dark', () => {
@@ -398,6 +406,8 @@ describe('removeTheme', () => {
     const host = document.createElement('div');
     applyTheme({ host, mode: 'light', palette: 'classic' });
     removeTheme(host);
+
+    expect(host.style.colorScheme).toBe('');
 
     expect(host.style.getPropertyValue('--sd-canvas')).toBe('');
     expect(host.style.getPropertyValue('--sd-accent')).toBe('');
