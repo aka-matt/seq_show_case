@@ -450,13 +450,48 @@
 </header>
 
 <!-- ================================================================
-     LOAD THE COMPONENT — IIFE (swap with ESM block below if needed)
+     LOAD THE COMPONENT — IIFE
+     Tries /dist/… (npm run dev from project root) then ./… (npm run serve:dist).
      ================================================================ -->
-<script defer src="./dist/sequence-diagram.iife.js"></script>
-
-<!-- ESM alternative (uncomment to use instead of IIFE):
-<script type="module" src="./dist/sequence-diagram.es.js"></script>
--->
+<script>
+  (function loadComponent() {
+    const candidates = [
+      // vite dev / project root: public/example.html → /dist/…
+      '/dist/sequence-diagram.iife.js',
+      // dist/example.html after build rewrite / relative open
+      './sequence-diagram.iife.js',
+      // public/example.html opened as file next to dist/
+      './dist/sequence-diagram.iife.js',
+    ];
+    let i = 0;
+    function tryNext() {
+      if (i >= candidates.length) {
+        console.error('[example] Failed to load sequence-diagram.iife.js from', candidates);
+        document.body.insertAdjacentHTML(
+          'afterbegin',
+          '<div style="background:#7f1d1d;color:#fff;padding:12px 16px;font:14px system-ui">' +
+          'Failed to load <code>sequence-diagram.iife.js</code>. Run <code>npm run build</code> then ' +
+          '<code>npm run serve:dist</code>, or <code>npm run dev</code> and open <code>/example.html</code>.' +
+          '</div>'
+        );
+        return;
+      }
+      const src = candidates[i++];
+      const s = document.createElement('script');
+      s.src = src;
+      s.defer = true;
+      s.onload = function () {
+        console.info('[example] loaded component from', src);
+      };
+      s.onerror = function () {
+        s.remove();
+        tryNext();
+      };
+      document.head.appendChild(s);
+    }
+    tryNext();
+  })();
+</script>
 
 
 <!-- ================================================================
@@ -473,8 +508,7 @@
   </p>
   <div class="demo-card">
     <div class="diagram-wrap">
-      <sequence-diagram id="basic-demo" height="360px"></sequence-diagram>
-      <script type="application/json">
+      <sequence-diagram id="basic-demo" height="360px"><script type="application/json">
       {
         "schemaVersion": "1.0",
         "title": "Basic Example",
@@ -490,7 +524,7 @@
           { "id": "e4", "type": "message", "from": "bob",   "to": "alice", "label": "Reply", "messageKind": "sync" }
         ]
       }
-      </script>
+      </script></sequence-diagram>
     </div>
   </div>
 </section>
@@ -530,7 +564,7 @@
     </div>
   </div>
   <script>
-    (() => {
+    customElements.whenDefined('sequence-diagram').then(() => {
       const initialData = {
         schemaVersion: "1.0",
         participants: [
@@ -565,7 +599,7 @@
       document.getElementById('btn-reset-api').addEventListener('click', () => {
         el.data = initialData;
       });
-    })();
+    });
   </script>
 </section>
 
@@ -588,8 +622,7 @@
     <div class="theme-row">
       <div class="theme-cell">
         <div class="theme-cell-label">Light</div>
-        <sequence-diagram theme="light" palette="ocean" height="260px"></sequence-diagram>
-        <script type="application/json">
+        <sequence-diagram theme="light" palette="ocean" height="260px"><script type="application/json">
         {
           "schemaVersion": "1.0",
           "participants": [
@@ -604,12 +637,11 @@
             { "id": "m4", "type": "message", "from": "w", "to": "u", "label": "OK", "messageKind": "return" }
           ]
         }
-        </script>
+        </script></sequence-diagram>
       </div>
       <div class="theme-cell">
         <div class="theme-cell-label">Dark</div>
-        <sequence-diagram theme="dark" palette="ocean" height="260px"></sequence-diagram>
-        <script type="application/json">
+        <sequence-diagram theme="dark" palette="ocean" height="260px"><script type="application/json">
         {
           "schemaVersion": "1.0",
           "participants": [
@@ -624,12 +656,11 @@
             { "id": "m4", "type": "message", "from": "w", "to": "u", "label": "OK", "messageKind": "return" }
           ]
         }
-        </script>
+        </script></sequence-diagram>
       </div>
       <div class="theme-cell">
         <div class="theme-cell-label">System</div>
-        <sequence-diagram theme="system" palette="ocean" height="260px"></sequence-diagram>
-        <script type="application/json">
+        <sequence-diagram theme="system" palette="ocean" height="260px"><script type="application/json">
         {
           "schemaVersion": "1.0",
           "participants": [
@@ -644,7 +675,7 @@
             { "id": "m4", "type": "message", "from": "w", "to": "u", "label": "OK", "messageKind": "return" }
           ]
         }
-        </script>
+        </script></sequence-diagram>
       </div>
     </div>
   </div>
@@ -670,7 +701,7 @@
     </div>
   </div>
   <script>
-    (() => {
+    customElements.whenDefined('sequence-diagram').then(() => {
       const palettes = ['classic', 'ocean', 'forest', 'violet', 'sunset', 'rose', 'slate'];
       const data = {
         schemaVersion: "1.0",
@@ -689,22 +720,26 @@
       palettes.forEach(p => {
         const card = document.createElement('div');
         card.className = 'palette-card';
-        card.innerHTML = `
-          <div class="palette-card-header">
-            <span>${p}</span>
-            <select data-id-prefix="${p}">
-              ${palettes.map(pal => `<option value="${pal}" ${pal === p ? 'selected' : ''}>${pal}</option>`).join('')}
-            </select>
-          </div>
-          <sequence-diagram palette="${p}" height="180px"></sequence-diagram>
-          <script type="application/json">${JSON.stringify(data)}<\/script>
+        const header = document.createElement('div');
+        header.className = 'palette-card-header';
+        header.innerHTML = `
+          <span>${p}</span>
+          <select data-id-prefix="${p}">
+            ${palettes.map(pal => `<option value="${pal}" ${pal === p ? 'selected' : ''}>${pal}</option>`).join('')}
+          </select>
         `;
+        const diagram = document.createElement('sequence-diagram');
+        diagram.setAttribute('palette', p);
+        diagram.setAttribute('height', '180px');
+        diagram.data = data;
+        card.appendChild(header);
+        card.appendChild(diagram);
         container.appendChild(card);
-        card.querySelector('select').addEventListener('change', e => {
-          card.querySelector('sequence-diagram').palette = e.target.value;
+        header.querySelector('select').addEventListener('change', e => {
+          diagram.palette = e.target.value;
         });
       });
-    })();
+    });
   </script>
 </section>
 
@@ -746,8 +781,7 @@
   <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem;">All Features in One Diagram</h3>
   <div class="demo-card">
     <div class="diagram-wrap">
-      <sequence-diagram id="feature-demo-2" palette="forest" height="520px"></sequence-diagram>
-      <script type="application/json">
+      <sequence-diagram id="feature-demo-2" palette="forest" height="520px"><script type="application/json">
       {
         "schemaVersion": "1.0",
         "title": "All Features Showcase",
@@ -772,30 +806,41 @@
           { "id": "d1",  "type": "deactivate", "participant": "svc" }
         ]
       }
-      </script>
+      </script></sequence-diagram>
     </div>
   </div>
   <script>
-    (() => {
+    customElements.whenDefined('sequence-diagram').then(() => {
       const select = document.getElementById('feature-select-1');
       const el = document.getElementById('feature-demo-1');
-      // Paths relative to the page — works when example.html is served from project root or dist/
-      const files = {
-        'basic':             './examples/basic.json',
-        'checkout-alt':      './examples/checkout-alt.json',
-        'polling-loop':      './examples/polling-loop.json',
-        'parallel-services': './examples/parallel-services.json',
-        'nested-fragments':  './examples/nested-fragments.json'
-      };
+      // Resolve relative to this page so it works from project root (dev) and dist/.
+      const base = new URL('.', document.currentScript?.src || location.href);
+      // Prefer /examples/ (vite public/) then ./examples/ (dist layout).
+      const candidates = (name) => [
+        new URL(`examples/${name}.json`, location.origin + '/').href,
+        new URL(`./examples/${name}.json`, location.href).href,
+      ];
       function load(name) {
-        fetch(files[name])
-          .then(r => r.json())
-          .then(d => { el.data = d; })
-          .catch(e => console.error('Failed to load', name, e));
+        const urls = candidates(name);
+        (async () => {
+          let lastErr;
+          for (const url of urls) {
+            try {
+              const r = await fetch(url);
+              if (!r.ok) throw new Error(r.status + ' ' + url);
+              const d = await r.json();
+              el.data = d;
+              return;
+            } catch (e) {
+              lastErr = e;
+            }
+          }
+          console.error('Failed to load', name, lastErr);
+        })();
       }
       select.addEventListener('change', e => load(e.target.value));
       load('basic');
-    })();
+    });
   </script>
 </section>
 
@@ -821,8 +866,7 @@
       <span id="event-type-label" style="font-size:0.85rem;color:var(--page-text-muted);">—</span>
     </div>
     <div class="diagram-wrap">
-      <sequence-diagram id="events-demo" palette="sunset" height="360px"></sequence-diagram>
-      <script type="application/json">
+      <sequence-diagram id="events-demo" palette="sunset" height="360px"><script type="application/json">
       {
         "schemaVersion": "1.0",
         "participants": [
@@ -836,7 +880,7 @@
           { "id": "m4", "type": "message", "from": "c", "to": "s", "label": "POST /data",  "messageKind": "async" }
         ]
       }
-      </script>
+      </script></sequence-diagram>
     </div>
     <div class="event-log" id="event-log"></div>
   </div>
@@ -880,8 +924,7 @@
     <div class="resizable-demo">
       <div class="resize-handle" id="resize-handle"></div>
       <div class="resize-container" id="resize-container">
-        <sequence-diagram id="responsive-demo" palette="violet" height="320px"></sequence-diagram>
-        <script type="application/json">
+        <sequence-diagram id="responsive-demo" palette="violet" height="320px"><script type="application/json">
         {
           "schemaVersion": "1.0",
           "participants": [
@@ -897,7 +940,7 @@
             { "id": "m6", "type": "message", "from": "b", "to": "a", "label": "Result",     "messageKind": "return" }
           ]
         }
-        </script>
+        </script></sequence-diagram>
         <div class="size-label" id="size-label">width: 100%</div>
       </div>
     </div>
@@ -958,8 +1001,7 @@
     <div style="padding:1rem;">
       <div class="example-hostile-css">
         <div>
-          <sequence-diagram id="hostile-css-demo" palette="rose" height="280px"></sequence-diagram>
-          <script type="application/json">
+          <sequence-diagram id="hostile-css-demo" palette="rose" height="280px"><script type="application/json">
           {
             "schemaVersion": "1.0",
             "participants": [
@@ -970,7 +1012,7 @@
               { "id": "m2", "type": "message", "from": "y", "to": "x", "label": "World",   "messageKind": "return" }
             ]
           }
-          </script>
+          </script></sequence-diagram>
         </div>
         <button>HOSTILE BUTTON</button>
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="red"/></svg>
@@ -1018,7 +1060,7 @@
     <div class="event-log" id="error-log"></div>
   </div>
   <script>
-    (() => {
+    customElements.whenDefined('sequence-diagram').then(() => {
       const el = document.getElementById('error-demo');
       const log = document.getElementById('error-log');
       const summary = document.getElementById('error-summary');
@@ -1190,7 +1232,7 @@
       // Load valid baseline on first paint.
       setActiveChip('valid');
       el.data = validData;
-    })();
+    });
   </script>
 </section>
 
@@ -1215,7 +1257,7 @@
     </div>
   </div>
   <script>
-    (() => {
+    customElements.whenDefined('sequence-diagram').then(() => {
       const configs = [
         { id: 'm1', theme: 'light',   palette: 'classic', w: 300, h: 220 },
         { id: 'm2', theme: 'dark',   palette: 'ocean',   w: 300, h: 220 },
@@ -1224,7 +1266,7 @@
         { id: 'm5', theme: 'dark',   palette: 'sunset',  w: 300, h: 220 },
         { id: 'm6', theme: 'system', palette: 'rose',    w: 300, h: 220 },
       ];
-      const miniData = (label) => ({
+      const miniData = (_label) => ({
         schemaVersion: "1.0",
         participants: [
           { id: "a", label: "A" },
@@ -1248,7 +1290,7 @@
         el.data = miniData(cfg.id);
         grid.appendChild(el);
       });
-    })();
+    });
   </script>
 </section>
 

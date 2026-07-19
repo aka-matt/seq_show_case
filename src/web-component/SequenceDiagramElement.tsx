@@ -147,11 +147,38 @@ export class SequenceDiagramElement extends HTMLElement {
     // Setup ResizeObserver for responsive containers
     this.setupResizeObserver();
 
-    // Load initial data from attribute or embedded script
-    this.loadInitialData();
+    // Recover data that was set on the element before the custom element
+    // upgraded. A pre-upgrade `el.data = …` creates an own property that
+    // shadows the class accessor; delete it and re-apply via the setter so
+    // the value reaches currentData / processData.
+    const pendingData = this.consumePreUpgradeData();
+    if (pendingData !== undefined) {
+      this.data = pendingData;
+    } else if (!this.currentData) {
+      // No data yet — load from embedded <script type="application/json">
+      // child or data-json attribute. Skip if the accessor already populated
+      // currentData (e.g. host set `el.data` after upgrade but before connect).
+      this.loadInitialData();
+    }
 
-    // Initial render
+    // Initial render (also covers the case where data was applied pre-connect
+    // via the accessor — that path's renderDiagram no-ops without a root).
     this.renderDiagram();
+  }
+
+  /**
+   * If the host page assigned `element.data` before this custom element was
+   * upgraded, the assignment created an own property that shadows the class
+   * accessor. Capture and delete it so subsequent gets/sets use the accessor.
+   * Returns the captured value, or `undefined` if none was present.
+   */
+  private consumePreUpgradeData(): SequenceDiagramData | string | null | undefined {
+    if (!Object.prototype.hasOwnProperty.call(this, 'data')) {
+      return undefined;
+    }
+    const pending = (this as { data?: SequenceDiagramData | string | null }).data;
+    delete (this as { data?: unknown }).data;
+    return pending ?? null;
   }
 
   disconnectedCallback(): void {
