@@ -67,9 +67,13 @@ function processFragments(
 
       if (headerRowIndex === -1) continue;
 
-      // Determine which participants this fragment spans
-      const fragmentParticipants = fragment.participants ?? [];
-      const participantIndices = fragmentParticipants.map(pid => participantIndex.get(pid) ?? 0);
+      // Include every participant referenced anywhere in the fragment tree.
+      // Explicit JSON participants are treated as additions, not as a crop.
+      const participantIds = collectParticipantIds(fragment);
+      const participantIndices = participantIds
+        .map(pid => participantIndex.get(pid))
+        .filter((index): index is number => index !== undefined);
+      if (participantIndices.length === 0) continue;
       const startParticipantIndex = Math.min(...participantIndices);
       const endParticipantIndex = Math.max(...participantIndices);
 
@@ -82,12 +86,10 @@ function processFragments(
       const headerHeight =
         rows[headerRowIndex]?.estimatedHeight ?? DEFAULT_LAYOUT.fragmentPaddingTop;
 
-      // Find all rows that belong to this fragment
-      const fragmentRows = rows.filter(r => r.fragmentId === fragment.id);
-      const lastFragmentRow = fragmentRows[fragmentRows.length - 1];
-      const fragmentEndRowIndex = lastFragmentRow
-        ? rows.lastIndexOf(lastFragmentRow)
-        : headerRowIndex;
+      // Find the final row recursively. Nested rows carry their own fragmentId,
+      // so filtering only by the parent fragmentId truncates the parent frame.
+      const fragmentRowIds = collectFragmentRowIds(fragment);
+      const fragmentEndRowIndex = findLastRowIndex(rows, fragmentRowIds, headerRowIndex);
 
       const fragmentEndY = rowYPositions[fragmentEndRowIndex] ?? headerY;
       const fragmentEndRow = rows[fragmentEndRowIndex];
@@ -110,7 +112,7 @@ function processFragments(
         width,
         height: fragmentHeight + DEFAULT_LAYOUT.fragmentPaddingBottom,
         depth: rows[headerRowIndex]?.depth ?? 0,
-        participants: fragmentParticipants,
+        participants: participantIds,
         ...(fragment.label !== undefined && { label: fragment.label }),
       };
       fragments.push(layoutFragment);
@@ -126,12 +128,8 @@ function processFragments(
 
         const branchHeaderY = rowYPositions[branchHeaderRowIndex] ?? branchY;
 
-        // Find rows belonging to this branch
-        const branchRows = rows.filter(r => r.branchId === branch.id && r.kind !== 'branch-header');
-        const lastBranchRow = branchRows[branchRows.length - 1];
-        const branchEndRowIndex = lastBranchRow
-          ? rows.lastIndexOf(lastBranchRow)
-          : branchHeaderRowIndex;
+        const branchRowIds = collectBranchRowIds(branch);
+        const branchEndRowIndex = findLastRowIndex(rows, branchRowIds, branchHeaderRowIndex);
 
         const branchEndY = rowYPositions[branchEndRowIndex] ?? branchHeaderY;
         const branchEndRow = rows[branchEndRowIndex];
@@ -165,6 +163,63 @@ function processFragments(
       }
     }
   }
+}
+
+function collectParticipantIds(fragment: NormalizedFragmentEvent): string[] {
+  const ids = new Set(fragment.participants);
+  const visit = (events: NormalizedData['events']): void => {
+    for (const event of events) {
+      if (event.type === 'message') {
+        ids.add(event.from);
+        ids.add(event.to);
+      } else if (event.type === 'note') {
+        event.over.forEach(id => ids.add(id));
+      } else if (event.type === 'activate' || event.type === 'deactivate') {
+        ids.add(event.participant);
+      } else if (event.type === 'fragment') {
+        event.participants.forEach(id => ids.add(id));
+        event.branches.forEach(branch => visit(branch.events));
+      }
+    }
+  };
+  fragment.branches.forEach(branch => visit(branch.events));
+  return [...ids];
+}
+
+function collectFragmentRowIds(fragment: NormalizedFragmentEvent): Set<string> {
+  const ids = new Set<string>([fragment.id]);
+  for (const branch of fragment.branches) {
+    ids.add(branch.id);
+    collectEventRowIds(branch.events, ids);
+  }
+  return ids;
+}
+
+function collectBranchRowIds(branch: NormalizedFragmentEvent['branches'][number]): Set<string> {
+  const ids = new Set<string>([branch.id]);
+  collectEventRowIds(branch.events, ids);
+  return ids;
+}
+
+function collectEventRowIds(events: NormalizedData['events'], ids: Set<string>): void {
+  for (const event of events) {
+    ids.add(event.id);
+    if (event.type === 'fragment') {
+      for (const branch of event.branches) {
+        ids.add(branch.id);
+        collectEventRowIds(branch.events, ids);
+      }
+    }
+  }
+}
+
+function findLastRowIndex(rows: LayoutRow[], sourceIds: Set<string>, fallback: number): number {
+  let last = fallback;
+  for (let index = fallback; index < rows.length; index++) {
+    const sourceId = rows[index]?.sourceEventId;
+    if (sourceId !== undefined && sourceIds.has(sourceId)) last = index;
+  }
+  return last;
 }
 
 /**

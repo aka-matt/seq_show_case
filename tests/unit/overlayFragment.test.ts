@@ -213,6 +213,65 @@ describe('Fragment Layout', () => {
       expect(outerFragment.height).toBeGreaterThan(0);
       expect(innerFragment.width).toBeGreaterThan(0);
       expect(innerFragment.height).toBeGreaterThan(0);
+      expect(outerFragment.y + outerFragment.height).toBeGreaterThanOrEqual(
+        innerFragment.y + innerFragment.height
+      );
+    });
+
+    it('expands the outer bounds for all nested events and participants', () => {
+      const data: SequenceDiagramData = {
+        schemaVersion: '1.0',
+        participants: [
+          { id: 'p1', label: 'P1' },
+          { id: 'p2', label: 'P2' },
+          { id: 'p3', label: 'P3' },
+        ],
+        events: [
+          {
+            id: 'outer',
+            type: 'fragment',
+            fragmentKind: 'loop',
+            participants: ['p1'],
+            branches: [
+              {
+                id: 'outer-branch',
+                events: [
+                  {
+                    id: 'inner',
+                    type: 'fragment',
+                    fragmentKind: 'opt',
+                    participants: ['p2'],
+                    branches: [
+                      {
+                        id: 'inner-branch',
+                        events: [
+                          {
+                            id: 'nested-message',
+                            type: 'message',
+                            from: 'p2',
+                            to: 'p3',
+                            label: 'Nested',
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      const layout = layoutSequence(normalize(data));
+      const outer = layout.fragments.find(fragment => fragment.fragmentEventId === 'outer')!;
+      const inner = layout.fragments.find(fragment => fragment.fragmentEventId === 'inner')!;
+      const p3 = layout.participants.find(participant => participant.id === 'p3')!;
+      const nestedMessage = layout.messages.find(message => message.eventId === 'nested-message')!;
+
+      expect(outer.participants).toEqual(expect.arrayContaining(['p1', 'p2', 'p3']));
+      expect(outer.x + outer.width).toBeGreaterThan(p3.x + p3.width);
+      expect(nestedMessage.y).toBeLessThan(outer.y + outer.height);
+      expect(outer.y + outer.height).toBeGreaterThanOrEqual(inner.y + inner.height);
     });
 
     it('should track fragment types correctly', () => {
