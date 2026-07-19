@@ -17,8 +17,6 @@ import {
   applyEdgeChanges,
   BackgroundVariant,
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-
 import type { LayoutResult } from '../layout/layout-types';
 import { createNodes } from './createNodes';
 import { createEdges } from './createEdges';

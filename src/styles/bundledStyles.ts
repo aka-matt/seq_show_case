@@ -1,9 +1,9 @@
 // Import React Flow base styles - this is inlined at build time
 // The ?inline query loads the CSS as a string instead of injecting it
-import rfBaseStyles from '@xyflow/react/dist/base.css?inline';
+import rfStyles from '@xyflow/react/dist/style.css?inline';
 
 // Combine all styles
-const allStyles = rfBaseStyles;
+const allStyles = rfStyles;
 
 /**
  * Applies bundled styles to Shadow DOM
