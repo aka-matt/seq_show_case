@@ -65,7 +65,7 @@ describe('Activation Layout', () => {
       const layout = layoutSequence(normalized);
 
       const activation = layout.activations[0]!;
-      const participant = layout.participants.find((p) => p.id === 'p1')!;
+      const participant = layout.participants.find(p => p.id === 'p1')!;
 
       // Activation bar is centred on the lifeline (participant centre).
       expect(activation.x).toBeCloseTo(
@@ -74,17 +74,12 @@ describe('Activation Layout', () => {
       );
     });
 
-    it('should have y position at the activate event row', () => {
+    it('should anchor the activation to the adjacent message position', () => {
       const normalized = normalize(dataWithActivations);
       const layout = layoutSequence(normalized);
 
       const activation = layout.activations[0]!;
-      const activateRow = layout.eventRowMap.get('a1');
-
-      expect(activateRow).toBeDefined();
-      const rowY = layout.rowYPositions[activateRow as number];
-      expect(rowY).toBeDefined();
-      expect(activation.y).toBeCloseTo(rowY as number, 0);
+      expect(activation.y).toBeCloseTo(layout.messages[0]!.y, 0);
     });
   });
 
@@ -96,7 +91,7 @@ describe('Activation Layout', () => {
       expect(layout.activations).toHaveLength(2);
 
       // Both activations should be for p1
-      const p1Activations = layout.activations.filter((a) => a.participantId === 'p1');
+      const p1Activations = layout.activations.filter(a => a.participantId === 'p1');
       expect(p1Activations).toHaveLength(2);
 
       // They should have valid dimensions
@@ -113,8 +108,8 @@ describe('Activation Layout', () => {
       const activations = layout.activations;
 
       // Both activations should be for p1 with valid dimensions
-      const outerActivation = activations.find((a) => a.activateEventId === 'a1')!;
-      const innerActivation = activations.find((a) => a.activateEventId === 'a2')!;
+      const outerActivation = activations.find(a => a.activateEventId === 'a1')!;
+      const innerActivation = activations.find(a => a.activateEventId === 'a2')!;
 
       expect(outerActivation.participantId).toBe('p1');
       expect(innerActivation.participantId).toBe('p1');

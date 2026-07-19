@@ -28,16 +28,12 @@ const dataWithAltFragment: SequenceDiagramData = {
         {
           id: 'b1',
           label: 'true',
-          events: [
-            { id: 'm1', type: 'message', from: 'p1', to: 'p2', label: 'Do something' },
-          ],
+          events: [{ id: 'm1', type: 'message', from: 'p1', to: 'p2', label: 'Do something' }],
         },
         {
           id: 'b2',
           label: 'false',
-          events: [
-            { id: 'm2', type: 'message', from: 'p2', to: 'p1', label: 'Do nothing' },
-          ],
+          events: [{ id: 'm2', type: 'message', from: 'p2', to: 'p1', label: 'Do nothing' }],
         },
       ],
     },
@@ -97,9 +93,7 @@ const dataWithNestedFragments: SequenceDiagramData = {
               branches: [
                 {
                   id: 'b2',
-                  events: [
-                    { id: 'm1', type: 'message', from: 'p1', to: 'p2', label: 'Loop msg' },
-                  ],
+                  events: [{ id: 'm1', type: 'message', from: 'p1', to: 'p2', label: 'Loop msg' }],
                 },
               ],
             },
@@ -108,9 +102,7 @@ const dataWithNestedFragments: SequenceDiagramData = {
         {
           id: 'b3',
           label: 'case2',
-          events: [
-            { id: 'm2', type: 'message', from: 'p2', to: 'p1', label: 'Alt case2' },
-          ],
+          events: [{ id: 'm2', type: 'message', from: 'p2', to: 'p1', label: 'Alt case2' }],
         },
       ],
     },
@@ -143,14 +135,17 @@ describe('Fragment Layout', () => {
 
       expect(layout.branches).toHaveLength(2);
 
-      const branch1 = layout.branches.find((b) => b.branchId === 'b1')!;
-      const branch2 = layout.branches.find((b) => b.branchId === 'b2')!;
+      const branch1 = layout.branches.find(b => b.branchId === 'b1')!;
+      const branch2 = layout.branches.find(b => b.branchId === 'b2')!;
 
       expect(branch1.label).toBe('true');
       expect(branch2.label).toBe('false');
 
       // Branches should be at different y positions
       expect(branch1.y).not.toBe(branch2.y);
+      expect(layout.messages).toHaveLength(2);
+      expect(layout.messages[0]!.y).toBeLessThan(branch2.y);
+      expect(layout.messages[1]!.y).toBeGreaterThan(branch2.y);
     });
 
     it('should have fragment x spanning from first to last participant', () => {
@@ -158,8 +153,8 @@ describe('Fragment Layout', () => {
       const layout = layoutSequence(normalized);
 
       const fragment = layout.fragments[0]!;
-      const p1 = layout.participants.find((p) => p.id === 'p1')!;
-      const p2 = layout.participants.find((p) => p.id === 'p2')!;
+      const p1 = layout.participants.find(p => p.id === 'p1')!;
+      const p2 = layout.participants.find(p => p.id === 'p2')!;
 
       // Fragment should start before p1's x (with padding)
       expect(fragment.x).toBeLessThan(p1.x);
@@ -202,8 +197,8 @@ describe('Fragment Layout', () => {
       // Should have 2 fragments: outer alt and inner loop
       expect(layout.fragments).toHaveLength(2);
 
-      const outerFragment = layout.fragments.find((f) => f.fragmentEventId === 'frag1')!;
-      const innerFragment = layout.fragments.find((f) => f.fragmentEventId === 'frag2')!;
+      const outerFragment = layout.fragments.find(f => f.fragmentEventId === 'frag1')!;
+      const innerFragment = layout.fragments.find(f => f.fragmentEventId === 'frag2')!;
 
       expect(outerFragment.fragmentKind).toBe('alt');
       expect(innerFragment.fragmentKind).toBe('loop');
@@ -219,8 +214,8 @@ describe('Fragment Layout', () => {
       const normalized = normalize(dataWithNestedFragments);
       const layout = layoutSequence(normalized);
 
-      const outerFragment = layout.fragments.find((f) => f.fragmentEventId === 'frag1')!;
-      const innerFragment = layout.fragments.find((f) => f.fragmentEventId === 'frag2')!;
+      const outerFragment = layout.fragments.find(f => f.fragmentEventId === 'frag1')!;
+      const innerFragment = layout.fragments.find(f => f.fragmentEventId === 'frag2')!;
 
       // Outer should be alt, inner should be loop
       expect(outerFragment.fragmentKind).toBe('alt');

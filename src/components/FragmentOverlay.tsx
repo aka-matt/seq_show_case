@@ -3,7 +3,7 @@
  * Supports alt/opt/loop/par/critical/break fragment types.
  * Uses ViewportPortal for proper z-ordering.
  */
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { ViewportPortal } from '@xyflow/react';
 import type { LayoutFragment, LayoutBranch } from '../layout/layout-types';
 
@@ -60,59 +60,16 @@ function FragmentOverlayComponent({
         }}
       >
         {/* Fragment rectangles */}
-        {fragments.map((fragment) => {
-          const styles = FRAGMENT_STYLES[fragment.fragmentKind] ?? FRAGMENT_STYLES.alt;
-          return (
-            <div
-              key={`fragment-${fragment.fragmentEventId}`}
-              style={{
-                position: 'absolute',
-                left: fragment.x,
-                top: fragment.y,
-                width: fragment.width,
-                height: fragment.height,
-                backgroundColor: `var(${styles.bgVar})`,
-                border: `1px solid var(${styles.borderVar})`,
-                borderRadius: 6,
-                boxSizing: 'border-box',
-              }}
-            >
-              {/* Fragment header/label */}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onFragmentClick?.(fragment.fragmentEventId);
-                }}
-                style={{
-                  position: 'absolute',
-                  top: -14,
-                  left: 12,
-                  backgroundColor: `var(${styles.headerBgVar})`,
-                  border: `1px solid var(${styles.borderVar})`,
-                  borderRadius: 4,
-                  padding: '2px 8px',
-                  pointerEvents: 'auto',
-                  cursor: 'pointer',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: `var(${styles.borderVar})`,
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  {FRAGMENT_LABELS[fragment.fragmentKind]}
-                  {fragment.label ? ` — ${fragment.label}` : ''}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+        {fragments.map(fragment => (
+          <FragmentBox
+            key={`fragment-${fragment.fragmentEventId}`}
+            fragment={fragment}
+            {...(onFragmentClick !== undefined && { onFragmentClick })}
+          />
+        ))}
 
         {/* Branch separators */}
-        {branches.map((branch) => (
+        {branches.map(branch => (
           <div
             key={`branch-${branch.branchId}`}
             style={{
@@ -146,6 +103,77 @@ function FragmentOverlayComponent({
         ))}
       </div>
     </ViewportPortal>
+  );
+}
+
+function FragmentBox({
+  fragment,
+  onFragmentClick,
+}: {
+  fragment: LayoutFragment;
+  onFragmentClick?: (fragmentEventId: string) => void;
+}): React.ReactElement {
+  const [hovered, setHovered] = useState(false);
+  const styles = FRAGMENT_STYLES[fragment.fragmentKind] ?? FRAGMENT_STYLES.alt;
+  const fadesUntilHovered = ['alt', 'opt', 'loop', 'par'].includes(fragment.fragmentKind);
+  const fill =
+    fadesUntilHovered && !hovered
+      ? `color-mix(in srgb, var(${styles.bgVar}) 22%, transparent)`
+      : `var(${styles.bgVar})`;
+  const headerFill =
+    fadesUntilHovered && !hovered
+      ? `color-mix(in srgb, var(${styles.headerBgVar}) 45%, transparent)`
+      : `var(${styles.headerBgVar})`;
+
+  return (
+    <div
+      data-fragment-kind={fragment.fragmentKind}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'absolute',
+        left: fragment.x,
+        top: fragment.y,
+        width: fragment.width,
+        height: fragment.height,
+        backgroundColor: fill,
+        border: `1px solid var(${styles.borderVar})`,
+        borderRadius: 6,
+        boxSizing: 'border-box',
+        pointerEvents: 'auto',
+        transition: 'background-color 140ms ease',
+      }}
+    >
+      <div
+        onClick={e => {
+          e.stopPropagation();
+          onFragmentClick?.(fragment.fragmentEventId);
+        }}
+        style={{
+          position: 'absolute',
+          top: -14,
+          left: 12,
+          backgroundColor: headerFill,
+          border: `1px solid var(${styles.borderVar})`,
+          borderRadius: 4,
+          padding: '2px 8px',
+          cursor: 'pointer',
+          transition: 'background-color 140ms ease',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: `var(${styles.borderVar})`,
+            letterSpacing: '0.5px',
+          }}
+        >
+          {FRAGMENT_LABELS[fragment.fragmentKind]}
+          {fragment.label ? ` — ${fragment.label}` : ''}
+        </span>
+      </div>
+    </div>
   );
 }
 

@@ -23,7 +23,14 @@ const dataWithNotes: SequenceDiagramData = {
     { id: 'm1', type: 'message', from: 'p1', to: 'p2', label: 'Hello' },
     { id: 'n2', type: 'note', text: 'Another note', over: ['p2'], placement: 'right' },
     { id: 'n3', type: 'note', text: 'Centered note', over: ['p2'], placement: 'center' },
-    { id: 'n4', type: 'note', text: 'Multi-line\nnote content', over: ['p3'], placement: 'center', tone: 'warning' as const },
+    {
+      id: 'n4',
+      type: 'note',
+      text: 'Multi-line\nnote content',
+      over: ['p3'],
+      placement: 'center',
+      tone: 'warning' as const,
+    },
   ],
 };
 
@@ -36,8 +43,8 @@ describe('Note Layout', () => {
     const normalized = normalize(dataWithNotes);
     const layout = layoutSequence(normalized);
 
-    const note = layout.notes.find((n) => n.eventId === 'n1')!;
-    const participant = layout.participants.find((p) => p.id === 'p1')!;
+    const note = layout.notes.find(n => n.eventId === 'n1')!;
+    const participant = layout.participants.find(p => p.id === 'p1')!;
 
     expect(note.placement).toBe('left');
     expect(note.x).toBeLessThan(participant.x);
@@ -48,8 +55,8 @@ describe('Note Layout', () => {
     const normalized = normalize(dataWithNotes);
     const layout = layoutSequence(normalized);
 
-    const note = layout.notes.find((n) => n.eventId === 'n2')!;
-    const participant = layout.participants.find((p) => p.id === 'p2')!;
+    const note = layout.notes.find(n => n.eventId === 'n2')!;
+    const participant = layout.participants.find(p => p.id === 'p2')!;
 
     expect(note.placement).toBe('right');
     expect(note.x).toBeGreaterThan(participant.x + participant.width);
@@ -59,8 +66,8 @@ describe('Note Layout', () => {
     const normalized = normalize(dataWithNotes);
     const layout = layoutSequence(normalized);
 
-    const note = layout.notes.find((n) => n.eventId === 'n3')!;
-    const participant = layout.participants.find((p) => p.id === 'p2')!;
+    const note = layout.notes.find(n => n.eventId === 'n3')!;
+    const participant = layout.participants.find(p => p.id === 'p2')!;
 
     expect(note.placement).toBe('center');
     // Centered note should be horizontally within participant bounds
@@ -72,7 +79,7 @@ describe('Note Layout', () => {
     const normalized = normalize(dataWithNotes);
     const layout = layoutSequence(normalized);
 
-    const note = layout.notes.find((n) => n.eventId === 'n4')!;
+    const note = layout.notes.find(n => n.eventId === 'n4')!;
     expect(note.tone).toBe('warning');
   });
 
@@ -80,7 +87,7 @@ describe('Note Layout', () => {
     const normalized = normalize(dataWithNotes);
     const layout = layoutSequence(normalized);
 
-    const note = layout.notes.find((n) => n.eventId === 'n1')!;
+    const note = layout.notes.find(n => n.eventId === 'n1')!;
     expect(note.overParticipantIds).toContain('p1');
     expect(note.overParticipantIds).toHaveLength(1);
   });
@@ -89,9 +96,7 @@ describe('Note Layout', () => {
     const data: SequenceDiagramData = {
       schemaVersion: '1.0',
       participants: [{ id: 'p1', label: 'P1' }],
-      events: [
-        { id: 'n1', type: 'note', text: 'Simple note', over: ['p1'] },
-      ],
+      events: [{ id: 'n1', type: 'note', text: 'Simple note', over: ['p1'] }],
     };
 
     const normalized = normalize(data);
@@ -106,8 +111,32 @@ describe('Note Layout', () => {
     const layout = layoutSequence(normalized);
 
     // Multi-line note should have some height and respect max width
-    const note = layout.notes.find((n) => n.eventId === 'n4')!;
+    const note = layout.notes.find(n => n.eventId === 'n4')!;
     expect(note.height).toBeGreaterThan(0);
     expect(note.width).toBeLessThanOrEqual(200); // noteMaxWidth
+  });
+
+  it('should reserve enough vertical room before the next message label', () => {
+    const normalized = normalize({
+      schemaVersion: '1.0',
+      participants: [
+        { id: 'p1', label: 'P1' },
+        { id: 'p2', label: 'P2' },
+      ],
+      events: [
+        {
+          id: 'n1',
+          type: 'note',
+          text: 'A note with enough content to occupy its box',
+          over: ['p1'],
+        },
+        { id: 'm1', type: 'message', from: 'p1', to: 'p2', label: 'Next message' },
+      ],
+    });
+    const layout = layoutSequence(normalized);
+    const note = layout.notes[0]!;
+    const message = layout.messages[0]!;
+
+    expect(message.y).toBeGreaterThan(note.y + note.height);
   });
 });

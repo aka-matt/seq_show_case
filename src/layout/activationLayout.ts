@@ -3,9 +3,9 @@
  * All functions are React-independent — pure TypeScript only.
  */
 
-import type { NormalizedData } from "../model/normalized-types";
-import type { LayoutActivation, LayoutParticipant } from "./layout-types";
-import { DEFAULT_LAYOUT } from "./tokens";
+import type { NormalizedData } from '../model/normalized-types';
+import type { LayoutActivation, LayoutParticipant, LayoutRow } from './layout-types';
+import { DEFAULT_LAYOUT } from './tokens';
 
 // ---------------------------------------------------------------------------
 // Activation layout
@@ -20,7 +20,7 @@ export function calculateActivations(
   normalizedData: NormalizedData,
   participants: LayoutParticipant[],
   rowYPositions: number[],
-  rowHeight: number
+  rows: LayoutRow[]
 ): LayoutActivation[] {
   const activations: LayoutActivation[] = [];
 
@@ -30,27 +30,27 @@ export function calculateActivations(
     participantMap.set(p.id, p);
   }
 
+  const rowByEventId = new Map<string, number>();
+  rows.forEach((row, index) => {
+    if (row.sourceEventId !== undefined) rowByEventId.set(row.sourceEventId, index);
+  });
+
+  // Activate/deactivate markers are invisible. Anchor them to the nearest
+  // visible message/event so bars connect actual diagram events.
+  const markerAnchors = calculateMarkerAnchors(normalizedData.events, rowByEventId);
+
   for (const pair of normalizedData.activationPairs) {
     const participant = participantMap.get(pair.participant);
     if (!participant) continue;
 
     // Find row indices for activate and deactivate
-    const activateRowInfo = normalizedData.eventIndex.get(pair.activateId);
-    const deactivateRowInfo = normalizedData.eventIndex.get(pair.deactivateId);
+    const activateRow = markerAnchors.get(pair.activateId);
+    const deactivateRow = markerAnchors.get(pair.deactivateId);
+    if (activateRow === undefined || deactivateRow === undefined) continue;
 
-    if (!activateRowInfo || !deactivateRowInfo) continue;
-
-    const activateRow = activateRowInfo.row;
-    const deactivateRow = deactivateRowInfo.row;
-
-    // Clamp row indices to valid range (activate/deactivate may be beyond visible rows)
-    const clampedActivateRow = Math.min(activateRow, rowYPositions.length - 1);
-    const clampedDeactivateRow = Math.min(deactivateRow, rowYPositions.length - 1);
-
-    // Calculate Y positions
-    const y = rowYPositions[clampedActivateRow] ?? 0;
-    const deactivateY = rowYPositions[clampedDeactivateRow] ?? 0;
-    const height = deactivateY - y + rowHeight;
+    const y = rowCenter(activateRow, rows, rowYPositions);
+    const deactivateY = rowCenter(deactivateRow, rows, rowYPositions);
+    const height = Math.max(2, deactivateY - y);
 
     // Activation bar is centred on the lifeline (participant centre).
     const x = participant.x + participant.width / 2 - DEFAULT_LAYOUT.activationWidth / 2;
@@ -68,21 +68,20 @@ export function calculateActivations(
 
   // Handle unclosed activations (extend to end of diagram)
   for (const activateId of normalizedData.unclosedActivations) {
-    const activateRowInfo = normalizedData.eventIndex.get(activateId);
-    if (!activateRowInfo) continue;
-
-    const activateEvent = normalizedData.events.find((e) => e.id === activateId);
-    if (!activateEvent || activateEvent.type !== "activate") continue;
+    const activateEvent = findEvent(normalizedData.events, activateId);
+    if (!activateEvent || activateEvent.type !== 'activate') continue;
 
     const participant = participantMap.get(activateEvent.participant);
     if (!participant) continue;
 
-    const activateRow = activateRowInfo.row;
-    const y = rowYPositions[activateRow] ?? 0;
+    const activateRow = markerAnchors.get(activateId);
+    if (activateRow === undefined) continue;
+    const y = rowCenter(activateRow, rows, rowYPositions);
 
     // Extend to the last row
-    const lastY = rowYPositions[rowYPositions.length - 1] ?? y;
-    const height = lastY - y + rowHeight;
+    const lastRow = Math.max(0, rows.length - 1);
+    const lastY = rowCenter(lastRow, rows, rowYPositions);
+    const height = Math.max(2, lastY - y);
 
     // Centred on the lifeline (participant centre).
     const x = participant.x + participant.width / 2 - DEFAULT_LAYOUT.activationWidth / 2;
@@ -90,7 +89,7 @@ export function calculateActivations(
     activations.push({
       participantId: activateEvent.participant,
       activateEventId: activateId,
-      deactivateEventId: "", // No matching deactivate
+      deactivateEventId: '', // No matching deactivate
       x,
       y,
       width: DEFAULT_LAYOUT.activationWidth,
@@ -99,6 +98,57 @@ export function calculateActivations(
   }
 
   return activations;
+}
+
+function rowCenter(row: number, rows: LayoutRow[], positions: number[]): number {
+  return (positions[row] ?? 0) + (rows[row]?.estimatedHeight ?? DEFAULT_LAYOUT.rowHeight) / 2;
+}
+
+function calculateMarkerAnchors(
+  events: NormalizedData['events'],
+  rowByEventId: Map<string, number>
+): Map<string, number> {
+  const ordered: string[] = [];
+  const walk = (items: NormalizedData['events']): void => {
+    for (const event of items) {
+      ordered.push(event.id);
+      if (event.type === 'fragment') {
+        for (const branch of event.branches) walk(branch.events);
+      }
+    }
+  };
+  walk(events);
+
+  const anchors = new Map<string, number>();
+  for (let index = 0; index < ordered.length; index++) {
+    const id = ordered[index]!;
+    if (rowByEventId.has(id)) continue;
+    let anchor: number | undefined;
+    for (let before = index - 1; before >= 0 && anchor === undefined; before--) {
+      anchor = rowByEventId.get(ordered[before]!);
+    }
+    for (let after = index + 1; after < ordered.length && anchor === undefined; after++) {
+      anchor = rowByEventId.get(ordered[after]!);
+    }
+    if (anchor !== undefined) anchors.set(id, anchor);
+  }
+  return anchors;
+}
+
+function findEvent(
+  events: NormalizedData['events'],
+  id: string
+): NormalizedData['events'][number] | undefined {
+  for (const event of events) {
+    if (event.id === id) return event;
+    if (event.type === 'fragment') {
+      for (const branch of event.branches) {
+        const found = findEvent(branch.events, id);
+        if (found) return found;
+      }
+    }
+  }
+  return undefined;
 }
 
 /**

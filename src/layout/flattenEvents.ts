@@ -3,10 +3,10 @@
  * All functions are React-independent — pure TypeScript only.
  */
 
-import type { NormalizedSequenceEvent, NormalizedFragmentEvent } from "../model/normalized-types";
-import type { LayoutRow } from "./layout-types";
-import { DEFAULT_LAYOUT } from "./tokens";
-import { estimateLineCount } from "./textMeasurement";
+import type { NormalizedSequenceEvent, NormalizedFragmentEvent } from '../model/normalized-types';
+import type { LayoutRow } from './layout-types';
+import { DEFAULT_LAYOUT } from './tokens';
+import { estimateLineCount } from './textMeasurement';
 
 // ---------------------------------------------------------------------------
 // Main flatten function
@@ -35,10 +35,10 @@ function flattenRecursive(
 ): void {
   for (const event of events) {
     switch (event.type) {
-      case "message": {
+      case 'message': {
         const row: LayoutRow = {
           key: `msg-${event.id}`,
-          kind: "message",
+          kind: 'message',
           depth,
           sourceEventId: event.id,
           estimatedHeight: DEFAULT_LAYOUT.rowHeight,
@@ -49,15 +49,17 @@ function flattenRecursive(
         break;
       }
 
-      case "note": {
+      case 'note': {
         // Notes take more height based on line count
         const noteMaxWidth = 200;
         const lineCount = estimateLineCount(event.text, noteMaxWidth);
-        const noteHeight = Math.max(DEFAULT_LAYOUT.rowHeight, lineCount * 20 + 16);
+        // Include the note's 4px top inset and a bottom clearance. Without
+        // this, the next message label can overlap the rendered note box.
+        const noteHeight = Math.max(DEFAULT_LAYOUT.rowHeight, lineCount * 20 + 28);
 
         const row: LayoutRow = {
           key: `note-${event.id}`,
-          kind: "note",
+          kind: 'note',
           depth,
           sourceEventId: event.id,
           estimatedHeight: noteHeight,
@@ -68,10 +70,10 @@ function flattenRecursive(
         break;
       }
 
-      case "divider": {
+      case 'divider': {
         const row: LayoutRow = {
           key: `div-${event.id}`,
-          kind: "divider",
+          kind: 'divider',
           depth,
           sourceEventId: event.id,
           estimatedHeight: 32, // Dividers are compact
@@ -82,21 +84,21 @@ function flattenRecursive(
         break;
       }
 
-      case "activate":
-      case "deactivate": {
+      case 'activate':
+      case 'deactivate': {
         // Activations/deactivations don't add visible rows themselves
         // They are rendered as part of message rows or via activation rectangles
         // So we don't push a row for them
         break;
       }
 
-      case "fragment": {
+      case 'fragment': {
         const fragment = event as NormalizedFragmentEvent;
 
         // Add fragment header row
         const headerRow: LayoutRow = {
           key: `frag-${fragment.id}`,
-          kind: "fragment-header",
+          kind: 'fragment-header',
           depth,
           sourceEventId: fragment.id,
           estimatedHeight: DEFAULT_LAYOUT.fragmentPaddingTop + DEFAULT_LAYOUT.branchHeaderHeight,
@@ -108,7 +110,7 @@ function flattenRecursive(
         for (const branch of fragment.branches) {
           const branchHeaderRow: LayoutRow = {
             key: `branch-${branch.id}`,
-            kind: "branch-header",
+            kind: 'branch-header',
             depth: depth + 1,
             sourceEventId: branch.id,
             estimatedHeight: DEFAULT_LAYOUT.branchHeaderHeight,
@@ -134,13 +136,15 @@ function flattenRecursive(
  * Calculates the total height of all rows.
  */
 export function calculateTotalRowsHeight(rows: LayoutRow[]): number {
-  return rows.reduce((sum, row) => sum + row.estimatedHeight, 0) +
-    (rows.length > 0 ? (rows.length - 1) * DEFAULT_LAYOUT.rowGap : 0);
+  return (
+    rows.reduce((sum, row) => sum + row.estimatedHeight, 0) +
+    (rows.length > 0 ? (rows.length - 1) * DEFAULT_LAYOUT.rowGap : 0)
+  );
 }
 
 /**
  * Finds the row index for a given event ID.
  */
 export function findRowByEventId(rows: LayoutRow[], eventId: string): number {
-  return rows.findIndex((row) => row.sourceEventId === eventId);
+  return rows.findIndex(row => row.sourceEventId === eventId);
 }

@@ -3,7 +3,7 @@
  * All functions are React-independent — pure TypeScript only.
  */
 
-import type { NormalizedData } from "../model/normalized-types";
+import type { NormalizedData } from '../model/normalized-types';
 import type {
   LayoutResult,
   LayoutParticipant,
@@ -11,12 +11,12 @@ import type {
   LayoutNote,
   LayoutDivider,
   LayoutRow,
-} from "./layout-types";
-import { DEFAULT_LAYOUT } from "./tokens";
-import { flattenEvents } from "./flattenEvents";
-import { calculateActivations } from "./activationLayout";
-import { calculateFragmentLayout } from "./fragmentLayout";
-import { estimateNoteDimensions } from "./textMeasurement";
+} from './layout-types';
+import { DEFAULT_LAYOUT } from './tokens';
+import { flattenEvents } from './flattenEvents';
+import { calculateActivations } from './activationLayout';
+import { calculateFragmentLayout } from './fragmentLayout';
+import { estimateNoteDimensions } from './textMeasurement';
 
 // ---------------------------------------------------------------------------
 // Main layout function
@@ -45,12 +45,7 @@ export function layoutSequence(normalizedData: NormalizedData): LayoutResult {
   );
 
   // Calculate activation rectangles
-  const activations = calculateActivations(
-    normalizedData,
-    participants,
-    rowYPositions,
-    DEFAULT_LAYOUT.rowHeight
-  );
+  const activations = calculateActivations(normalizedData, participants, rowYPositions, rows);
 
   // Calculate fragment/branch rectangles
   const { fragments, branches } = calculateFragmentLayout(
@@ -70,8 +65,9 @@ export function layoutSequence(normalizedData: NormalizedData): LayoutResult {
   }
 
   const eventRowMap = new Map<string, number>();
-  for (const [eventId, info] of normalizedData.eventIndex) {
-    eventRowMap.set(eventId, info.row);
+  for (let index = 0; index < rows.length; index++) {
+    const eventId = rows[index]?.sourceEventId;
+    if (eventId !== undefined) eventRowMap.set(eventId, index);
   }
 
   return {
@@ -96,7 +92,8 @@ export function layoutSequence(normalizedData: NormalizedData): LayoutResult {
 
 function calculateParticipantPositions(normalizedData: NormalizedData): LayoutParticipant[] {
   const participants: LayoutParticipant[] = [];
-  const { canvasPaddingX, participantWidth, participantGap, participantHeaderHeight } = DEFAULT_LAYOUT;
+  const { canvasPaddingX, participantWidth, participantGap, participantHeaderHeight } =
+    DEFAULT_LAYOUT;
 
   for (let i = 0; i < normalizedData.participants.length; i++) {
     const participant = normalizedData.participants[i];
@@ -155,125 +152,132 @@ function calculateMessagesAndNotes(
 
   // Build event ID → row index map
   const eventRowMap = new Map<string, number>();
-  for (const [eventId, info] of normalizedData.eventIndex) {
-    eventRowMap.set(eventId, info.row);
+  for (let index = 0; index < rows.length; index++) {
+    const eventId = rows[index]?.sourceEventId;
+    if (eventId !== undefined) eventRowMap.set(eventId, index);
   }
 
-  // Process each event
-  for (const event of normalizedData.events) {
-    if (event.type === "message") {
-      const fromParticipant = participantMap.get(event.from);
-      const toParticipant = participantMap.get(event.to);
+  // Process every event at its actual nesting level.
+  const visitEvents = (events: NormalizedData['events']): void => {
+    for (const event of events) {
+      if (event.type === 'message') {
+        const fromParticipant = participantMap.get(event.from);
+        const toParticipant = participantMap.get(event.to);
 
-      if (!fromParticipant || !toParticipant) continue;
+        if (!fromParticipant || !toParticipant) continue;
 
-      const rowIndex = eventRowMap.get(event.id);
-      if (rowIndex === undefined) continue;
+        const rowIndex = eventRowMap.get(event.id);
+        if (rowIndex === undefined) continue;
 
-      const y = rowYPositions[rowIndex] ?? 0;
-      const row = rows[rowIndex];
+        const y = rowYPositions[rowIndex] ?? 0;
+        const row = rows[rowIndex];
 
-      // Calculate message endpoints
-      let fromX: number;
-      let toX: number;
+        // Calculate message endpoints
+        let fromX: number;
+        let toX: number;
 
-      // Endpoints are the lifeline centres (vertical dashed lines), not the
-      // participant header box edges — otherwise edges appear to float free.
-      const fromCenterX = fromParticipant.x + fromParticipant.width / 2;
-      const toCenterX = toParticipant.x + toParticipant.width / 2;
+        // Endpoints are the lifeline centres (vertical dashed lines), not the
+        // participant header box edges — otherwise edges appear to float free.
+        const fromCenterX = fromParticipant.x + fromParticipant.width / 2;
+        const toCenterX = toParticipant.x + toParticipant.width / 2;
 
-      if (event.isSelfCall) {
-        // Self-call: leave the lifeline to the right and loop back.
-        fromX = fromCenterX;
-        toX = fromCenterX + DEFAULT_LAYOUT.selfMessageWidth;
-      } else {
-        fromX = fromCenterX;
-        toX = toCenterX;
+        if (event.isSelfCall) {
+          // Self-call: leave the lifeline to the right and loop back.
+          fromX = fromCenterX;
+          toX = fromCenterX + DEFAULT_LAYOUT.selfMessageWidth;
+        } else {
+          fromX = fromCenterX;
+          toX = toCenterX;
+        }
+
+        const msg: LayoutMessage = {
+          eventId: event.id,
+          fromParticipantId: event.from,
+          toParticipantId: event.to,
+          fromX,
+          toX,
+          y: y + (row?.estimatedHeight ?? DEFAULT_LAYOUT.rowHeight) / 2,
+          label: event.label,
+          messageKind: event.messageKind,
+          isSelfCall: event.isSelfCall,
+          selfCallWidth: event.isSelfCall ? DEFAULT_LAYOUT.selfMessageWidth : 0,
+          estimatedWidth: event.estimatedWidth,
+          ...(event.status !== undefined && { status: event.status }),
+        };
+        messages.push(msg);
+      } else if (event.type === 'note') {
+        const rowIndex = eventRowMap.get(event.id);
+        if (rowIndex === undefined) continue;
+
+        const y = rowYPositions[rowIndex] ?? 0;
+
+        // Calculate note position based on placement
+        const overParticipants = event.over
+          .map(pid => participantMap.get(pid))
+          .filter((p): p is LayoutParticipant => p !== undefined);
+
+        if (overParticipants.length === 0) continue;
+
+        // Note position is centered over the first participant in the list
+        const targetParticipant = overParticipants[0];
+        if (!targetParticipant) continue;
+
+        const noteMaxWidth = 200;
+        const { width, height } = estimateNoteDimensions(event.text, noteMaxWidth);
+
+        let x: number;
+        switch (event.placement) {
+          case 'left':
+            x = targetParticipant.x - width - 8;
+            break;
+          case 'right':
+            x = targetParticipant.x + targetParticipant.width + 8;
+            break;
+          case 'center':
+          default:
+            x = targetParticipant.x + (targetParticipant.width - width) / 2;
+            break;
+        }
+
+        const note: LayoutNote = {
+          eventId: event.id,
+          text: event.text,
+          placement: event.placement,
+          x,
+          y: y + 4,
+          width,
+          height,
+          tone: event.tone ?? 'info',
+          overParticipantIds: event.over,
+        };
+        notes.push(note);
+      } else if (event.type === 'divider') {
+        const rowIndex = eventRowMap.get(event.id);
+        if (rowIndex === undefined) continue;
+
+        const y = rowYPositions[rowIndex] ?? 0;
+
+        // Divider spans all participants
+        const firstParticipant = participants[0];
+        const lastParticipant = participants[participants.length - 1];
+
+        if (!firstParticipant || !lastParticipant) continue;
+
+        const divider: LayoutDivider = {
+          eventId: event.id,
+          y: y + 16,
+          x: firstParticipant.x,
+          width: lastParticipant.x + lastParticipant.width - firstParticipant.x,
+          ...(event.label !== undefined && { label: event.label }),
+        };
+        dividers.push(divider);
+      } else if (event.type === 'fragment') {
+        for (const branch of event.branches) visitEvents(branch.events);
       }
-
-      const msg: LayoutMessage = {
-        eventId: event.id,
-        fromParticipantId: event.from,
-        toParticipantId: event.to,
-        fromX,
-        toX,
-        y: y + (row?.estimatedHeight ?? DEFAULT_LAYOUT.rowHeight) / 2,
-        label: event.label,
-        messageKind: event.messageKind,
-        isSelfCall: event.isSelfCall,
-        selfCallWidth: event.isSelfCall ? DEFAULT_LAYOUT.selfMessageWidth : 0,
-        estimatedWidth: event.estimatedWidth,
-        ...(event.status !== undefined && { status: event.status }),
-      };
-      messages.push(msg);
-    } else if (event.type === "note") {
-      const rowIndex = eventRowMap.get(event.id);
-      if (rowIndex === undefined) continue;
-
-      const y = rowYPositions[rowIndex] ?? 0;
-
-      // Calculate note position based on placement
-      const overParticipants = event.over
-        .map((pid) => participantMap.get(pid))
-        .filter((p): p is LayoutParticipant => p !== undefined);
-
-      if (overParticipants.length === 0) continue;
-
-      // Note position is centered over the first participant in the list
-      const targetParticipant = overParticipants[0];
-      if (!targetParticipant) continue;
-
-      const noteMaxWidth = 200;
-      const { width, height } = estimateNoteDimensions(event.text, noteMaxWidth);
-
-      let x: number;
-      switch (event.placement) {
-        case "left":
-          x = targetParticipant.x - width - 8;
-          break;
-        case "right":
-          x = targetParticipant.x + targetParticipant.width + 8;
-          break;
-        case "center":
-        default:
-          x = targetParticipant.x + (targetParticipant.width - width) / 2;
-          break;
-      }
-
-      const note: LayoutNote = {
-        eventId: event.id,
-        text: event.text,
-        placement: event.placement,
-        x,
-        y: y + 4,
-        width,
-        height,
-        tone: event.tone ?? "info",
-        overParticipantIds: event.over,
-      };
-      notes.push(note);
-    } else if (event.type === "divider") {
-      const rowIndex = eventRowMap.get(event.id);
-      if (rowIndex === undefined) continue;
-
-      const y = rowYPositions[rowIndex] ?? 0;
-
-      // Divider spans all participants
-      const firstParticipant = participants[0];
-      const lastParticipant = participants[participants.length - 1];
-
-      if (!firstParticipant || !lastParticipant) continue;
-
-      const divider: LayoutDivider = {
-        eventId: event.id,
-        y: y + 16,
-        x: firstParticipant.x,
-        width: lastParticipant.x + lastParticipant.width - firstParticipant.x,
-        ...(event.label !== undefined && { label: event.label }),
-      };
-      dividers.push(divider);
     }
-  }
+  };
+
+  visitEvents(normalizedData.events);
 
   return { messages, notes, dividers };
 }
@@ -311,11 +315,7 @@ function calculateBounds(
     };
   }
 
-  const width =
-    lastParticipant.x +
-    lastParticipant.width +
-    canvasPaddingX -
-    firstParticipant.x;
+  const width = lastParticipant.x + lastParticipant.width + canvasPaddingX - firstParticipant.x;
 
   // Calculate height: from top to last row + bottom padding
   const lastRowY = rowYPositions[rowYPositions.length - 1] ?? 0;
@@ -339,9 +339,7 @@ function calculateBounds(
 /**
  * Calculates just the participant X positions (useful for testing).
  */
-export function calculateParticipantXPositions(
-  participantCount: number
-): number[] {
+export function calculateParticipantXPositions(participantCount: number): number[] {
   const positions: number[] = [];
   const { canvasPaddingX, participantWidth, participantGap } = DEFAULT_LAYOUT;
 

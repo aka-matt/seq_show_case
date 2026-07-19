@@ -9,7 +9,7 @@ import type {
   MessageEvent,
   NoteEvent,
   FragmentEvent,
-} from "./public-types";
+} from './public-types';
 
 import type {
   NormalizedData,
@@ -24,9 +24,9 @@ import type {
   ActivationPair,
   SelfCallInfo,
   EventRowInfo,
-} from "./normalized-types";
+} from './normalized-types';
 
-import type { SequenceDiagramWarning } from "./validation-types";
+import type { SequenceDiagramWarning } from './validation-types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -59,16 +59,28 @@ export function normalize(data: SequenceDiagramData): NormalizedData {
   }
 
   // Normalize events (fills defaults, builds indices, matches activations)
-  const { events, eventIndex, activationPairs, selfCalls, unclosedActivations } =
-    normalizeEvents(data.events, participantIndex);
+  const { events, eventIndex, activationPairs, selfCalls, unclosedActivations } = normalizeEvents(
+    data.events,
+    participantIndex
+  );
 
-  const normalizedOptions: NormalizedData["options"] = data.options
+  const normalizedOptions: NormalizedData['options'] = data.options
     ? {
-        ...(data.options.showSequenceNumbers !== undefined && { showSequenceNumbers: data.options.showSequenceNumbers }),
-        ...(data.options.showParticipantIcons !== undefined && { showParticipantIcons: data.options.showParticipantIcons }),
-        ...(data.options.messageLabelMaxWidth !== undefined && { messageLabelMaxWidth: data.options.messageLabelMaxWidth }),
-        ...(data.options.participantWidth !== undefined && { participantWidth: data.options.participantWidth }),
-        ...(data.options.participantGap !== undefined && { participantGap: data.options.participantGap }),
+        ...(data.options.showSequenceNumbers !== undefined && {
+          showSequenceNumbers: data.options.showSequenceNumbers,
+        }),
+        ...(data.options.showParticipantIcons !== undefined && {
+          showParticipantIcons: data.options.showParticipantIcons,
+        }),
+        ...(data.options.messageLabelMaxWidth !== undefined && {
+          messageLabelMaxWidth: data.options.messageLabelMaxWidth,
+        }),
+        ...(data.options.participantWidth !== undefined && {
+          participantWidth: data.options.participantWidth,
+        }),
+        ...(data.options.participantGap !== undefined && {
+          participantGap: data.options.participantGap,
+        }),
         ...(data.options.rowGap !== undefined && { rowGap: data.options.rowGap }),
       }
     : undefined;
@@ -122,7 +134,8 @@ function normalizeEvents(
   };
 
   // Per-participant activation stacks for pairing
-  const activationStacks: Map<string, { id: string; visibleRow: number; depth: number }[]> = new Map();
+  const activationStacks: Map<string, { id: string; visibleRow: number; depth: number }[]> =
+    new Map();
 
   let eventRow = 0;
   let visibleRow = 0;
@@ -137,7 +150,7 @@ function normalizeEvents(
     };
 
     switch (event.type) {
-      case "message": {
+      case 'message': {
         const normalized = normalizeMessageEvent(event, participantIndex);
         result.events.push(normalized);
         result.eventIndex.set(event.id, eventRowInfo);
@@ -154,7 +167,7 @@ function normalizeEvents(
         break;
       }
 
-      case "note": {
+      case 'note': {
         const normalized = normalizeNoteEvent(event);
         result.events.push(normalized);
         result.eventIndex.set(event.id, eventRowInfo);
@@ -162,10 +175,10 @@ function normalizeEvents(
         break;
       }
 
-      case "activate": {
+      case 'activate': {
         const normalized: NormalizedActivateEvent = {
           id: event.id,
-          type: "activate",
+          type: 'activate',
           participant: event.participant,
           depth,
         };
@@ -179,10 +192,10 @@ function normalizeEvents(
         break;
       }
 
-      case "deactivate": {
+      case 'deactivate': {
         const normalized: NormalizedDeactivateEvent = {
           id: event.id,
-          type: "deactivate",
+          type: 'deactivate',
           participant: event.participant,
           depth,
         };
@@ -210,10 +223,10 @@ function normalizeEvents(
         break;
       }
 
-      case "divider": {
+      case 'divider': {
         const normalized: NormalizedSequenceEvent = {
           id: event.id,
-          type: "divider",
+          type: 'divider',
           ...(event.label !== undefined && { label: event.label }),
         };
         result.events.push(normalized);
@@ -222,13 +235,14 @@ function normalizeEvents(
         break;
       }
 
-      case "fragment": {
+      case 'fragment': {
         const normalized = normalizeFragmentEvent(event, participantIndex, depth);
         result.events.push(normalized);
         result.eventIndex.set(event.id, eventRowInfo);
 
         // Process branches recursively
-        for (const branch of event.branches) {
+        for (let branchIndex = 0; branchIndex < event.branches.length; branchIndex++) {
+          const branch = event.branches[branchIndex]!;
           const branchResult = normalizeEvents(
             branch.events,
             participantIndex,
@@ -237,10 +251,11 @@ function normalizeEvents(
             branch.id
           );
 
-          // Merge branch results
-          for (const ev of branchResult.events) {
-            result.events.push(ev);
-          }
+          // Keep branch events inside their branch.  Appending them to the
+          // root list makes the fragment appear empty to the layout engine.
+          normalized.branches[branchIndex]!.events = branchResult.events;
+
+          // Merge only the lookup/relationship metadata into the root result.
           for (const [evId, info] of branchResult.eventIndex) {
             result.eventIndex.set(evId, info);
           }
@@ -262,7 +277,7 @@ function normalizeEvents(
     for (const activate of stack) {
       result.unclosedActivations.push(activate.id);
       result.eventWarnings.push({
-        code: "UNCLOSED_ACTIVATION",
+        code: 'UNCLOSED_ACTIVATION',
         message: `Activation '${activate.id}' for participant has no matching deactivation`,
         path: `/events/${activate.id}`,
         details: { activateId: activate.id },
@@ -284,19 +299,22 @@ function normalizeMessageEvent(
   // Estimate width based on label length + arrow
   const labelWidth = event.label.length * AVG_CHAR_WIDTH;
   const arrowWidth = 40; // arrow head space
-  const estimatedWidth = Math.min(labelWidth + arrowWidth, DEFAULT_MESSAGE_LABEL_MAX_WIDTH + arrowWidth);
+  const estimatedWidth = Math.min(
+    labelWidth + arrowWidth,
+    DEFAULT_MESSAGE_LABEL_MAX_WIDTH + arrowWidth
+  );
 
   return {
     id: event.id,
-    type: "message",
+    type: 'message',
     from: event.from,
     to: event.to,
     label: event.label,
-    messageKind: event.messageKind ?? "sync",
+    messageKind: event.messageKind ?? 'sync',
     isSelfCall: event.from === event.to,
     estimatedWidth,
     ...(event.number !== undefined && { number: event.number }),
-    status: event.status ?? "normal",
+    status: event.status ?? 'normal',
     ...(event.tooltip !== undefined && { tooltip: event.tooltip }),
     ...(event.metadata !== undefined && { metadata: event.metadata }),
   };
@@ -310,10 +328,10 @@ function normalizeNoteEvent(event: NoteEvent): NormalizedNoteEvent {
 
   return {
     id: event.id,
-    type: "note",
+    type: 'note',
     text: event.text,
     over: event.over,
-    placement: event.placement ?? "right",
+    placement: event.placement ?? 'right',
     estimatedLineCount: Math.max(1, lineCount),
     ...(event.tone !== undefined && { tone: event.tone }),
   };
@@ -327,7 +345,7 @@ function normalizeFragmentEvent(
   // Infer participants if not provided
   const participants = event.participants ?? inferFragmentParticipants(event, participantIndex);
 
-  const branches: NormalizedFragmentBranch[] = event.branches.map((branch) => ({
+  const branches: NormalizedFragmentBranch[] = event.branches.map(branch => ({
     id: branch.id,
     ...(branch.label !== undefined && { label: branch.label }),
     events: [], // Events are processed in normalizeEvents
@@ -335,7 +353,7 @@ function normalizeFragmentEvent(
 
   return {
     id: event.id,
-    type: "fragment",
+    type: 'fragment',
     fragmentKind: event.fragmentKind,
     ...(event.label !== undefined && { label: event.label }),
     participants,
@@ -359,16 +377,16 @@ function inferFragmentParticipants(
 
   function collectFromEvents(events: SequenceEvent[]): void {
     for (const ev of events) {
-      if (ev.type === "message") {
+      if (ev.type === 'message') {
         participantSet.add(ev.from);
         participantSet.add(ev.to);
-      } else if (ev.type === "note") {
+      } else if (ev.type === 'note') {
         for (const pid of ev.over) {
           participantSet.add(pid);
         }
-      } else if (ev.type === "activate" || ev.type === "deactivate") {
+      } else if (ev.type === 'activate' || ev.type === 'deactivate') {
         participantSet.add(ev.participant);
-      } else if (ev.type === "fragment") {
+      } else if (ev.type === 'fragment') {
         for (const branch of ev.branches) {
           collectFromEvents(branch.events);
         }
