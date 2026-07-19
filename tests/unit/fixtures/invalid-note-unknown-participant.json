@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "participants": [
+    { "id": "a", "label": "Alice" }
+  ],
+  "events": [
+    {
+      "id": "n1",
+      "type": "note",
+      "text": "A note about an unknown participant",
+      "over": ["unknown"]
+    }
+  ]
+}

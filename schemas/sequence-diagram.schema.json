@@ -1,0 +1,303 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sequence-diagram.schema.json",
+  "title": "Sequence Diagram",
+  "description": "JSON Schema for the Sequence Diagram Web Component data model",
+  "type": "object",
+  "required": ["schemaVersion", "participants", "events"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Must be '1.0'"
+    },
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/participant"
+      },
+      "minItems": 1
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sequenceEvent"
+      },
+      "minItems": 0
+    },
+    "options": {
+      "$ref": "#/$defs/diagramDataOptions"
+    }
+  },
+  "$defs": {
+    "participant": {
+      "type": "object",
+      "required": ["id", "label"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["actor", "service", "system", "database", "queue", "external"]
+        },
+        "icon": {
+          "type": "string",
+          "enum": ["person", "server", "database", "queue", "cloud", "browser"]
+        },
+        "accent": {
+          "type": "string",
+          "description": "CSS color value - validated semantically in code"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sequenceEvent": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["message", "note", "activate", "deactivate", "divider", "fragment"]
+        }
+      },
+      "oneOf": [
+        { "$ref": "#/$defs/messageEvent" },
+        { "$ref": "#/$defs/noteEvent" },
+        { "$ref": "#/$defs/activateEvent" },
+        { "$ref": "#/$defs/deactivateEvent" },
+        { "$ref": "#/$defs/dividerEvent" },
+        { "$ref": "#/$defs/fragmentEvent" }
+      ]
+    },
+    "messageEvent": {
+      "type": "object",
+      "required": ["id", "type", "from", "to", "label"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "message"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "messageKind": {
+          "type": "string",
+          "enum": ["sync", "async", "return"]
+        },
+        "number": {
+          "type": ["string", "number"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["normal", "success", "warning", "error", "muted"]
+        },
+        "tooltip": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "noteEvent": {
+      "type": "object",
+      "required": ["id", "type", "text", "over"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "note"
+        },
+        "text": {
+          "type": "string"
+        },
+        "over": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "placement": {
+          "type": "string",
+          "enum": ["left", "right", "center"]
+        },
+        "tone": {
+          "type": "string",
+          "enum": ["info", "success", "warning", "error", "neutral"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "activateEvent": {
+      "type": "object",
+      "required": ["id", "type", "participant"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "activate"
+        },
+        "participant": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "deactivateEvent": {
+      "type": "object",
+      "required": ["id", "type", "participant"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "deactivate"
+        },
+        "participant": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dividerEvent": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "divider"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fragmentEvent": {
+      "type": "object",
+      "required": ["id", "type", "fragmentKind", "branches"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "fragment"
+        },
+        "fragmentKind": {
+          "type": "string",
+          "enum": ["alt", "opt", "loop", "par", "critical", "break"]
+        },
+        "label": {
+          "type": "string"
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fragmentBranch"
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "fragmentBranch": {
+      "type": "object",
+      "required": ["id", "events"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sequenceEvent"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagramDataOptions": {
+      "type": "object",
+      "properties": {
+        "showSequenceNumbers": {
+          "type": "boolean"
+        },
+        "showParticipantIcons": {
+          "type": "boolean"
+        },
+        "messageLabelMaxWidth": {
+          "type": "number"
+        },
+        "participantWidth": {
+          "type": "number"
+        },
+        "participantGap": {
+          "type": "number"
+        },
+        "rowGap": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

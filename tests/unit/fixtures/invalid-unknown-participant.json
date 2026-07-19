@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "participants": [
+    { "id": "a", "label": "Alice" },
+    { "id": "b", "label": "Bob" }
+  ],
+  "events": [
+    {
+      "id": "m1",
+      "type": "message",
+      "from": "a",
+      "to": "c",
+      "label": "Hello unknown"
+    }
+  ]
+}

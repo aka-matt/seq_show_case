@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "id": "valid-minimal",
+  "title": "Minimal Valid Diagram",
+  "participants": [
+    { "id": "a", "label": "Alice" },
+    { "id": "b", "label": "Bob" }
+  ],
+  "events": [
+    {
+      "id": "m1",
+      "type": "message",
+      "from": "a",
+      "to": "b",
+      "label": "Hello Bob",
+      "messageKind": "sync"
+    },
+    {
+      "id": "m2",
+      "type": "message",
+      "from": "b",
+      "to": "a",
+      "label": "Hello Alice",
+      "messageKind": "return"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0",
+  "participants": [
+    { "id": "a", "label": "Alice" }
+  ],
+  "events": [
+    {
+      "id": "f1",
+      "type": "fragment",
+      "fragmentKind": "loop",
+      "label": "Level 1",
+      "branches": [
+        {
+          "id": "b1",
+          "label": "Branch 1",
+          "events": [
+            {
+              "id": "f2",
+              "type": "fragment",
+              "fragmentKind": "loop",
+              "label": "Level 2",
+              "branches": [
+                {
+                  "id": "b2",
+                  "events": [
+                    {
+                      "id": "f3",
+                      "type": "fragment",
+                      "fragmentKind": "loop",
+                      "label": "Level 3",
+                      "branches": [
+                        {
+                          "id": "b3",
+                          "events": [
+                            {
+                              "id": "f4",
+                              "type": "fragment",
+                              "fragmentKind": "loop",
+                              "label": "Level 4",
+                              "branches": [
+                                {
+                                  "id": "b4",
+                                  "events": [
+                                    {
+                                      "id": "f5",
+                                      "type": "fragment",
+                                      "fragmentKind": "loop",
+                                      "label": "Level 5",
+                                      "branches": [
+                                        {
+                                          "id": "b5",
+                                          "events": [
+                                            {
+                                              "id": "m1",
+                                              "type": "message",
+                                              "from": "a",
+                                              "to": "a",
+                                              "label": "Deep message"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
