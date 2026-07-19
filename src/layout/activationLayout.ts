@@ -35,22 +35,28 @@ export function calculateActivations(
     if (row.sourceEventId !== undefined) rowByEventId.set(row.sourceEventId, index);
   });
 
-  // Activate/deactivate markers are invisible. Anchor them to the nearest
-  // visible message/event so bars connect actual diagram events.
-  const markerAnchors = calculateMarkerAnchors(normalizedData.events, rowByEventId);
+  // Markers use the preceding message involving their own participant.
+  const markerAnchors = calculateParticipantMessageAnchors(normalizedData.events, rowByEventId);
+  const lifelineBottom = calculateLifelineBottom(rows, rowYPositions);
 
   for (const pair of normalizedData.activationPairs) {
     const participant = participantMap.get(pair.participant);
     if (!participant) continue;
 
-    // Find row indices for activate and deactivate
     const activateRow = markerAnchors.get(pair.activateId);
     const deactivateRow = markerAnchors.get(pair.deactivateId);
-    if (activateRow === undefined || deactivateRow === undefined) continue;
-
-    const y = rowCenter(activateRow, rows, rowYPositions);
-    const deactivateY = rowCenter(deactivateRow, rows, rowYPositions);
-    const height = Math.max(2, deactivateY - y);
+    const y =
+      activateRow === undefined
+        ? participant.y + participant.height
+        : rowCenter(activateRow, rows, rowYPositions);
+    const deactivateY =
+      deactivateRow === undefined
+        ? participant.y + participant.height
+        : rowCenter(deactivateRow, rows, rowYPositions);
+    const sameMessage = activateRow !== undefined && activateRow === deactivateRow;
+    const height = sameMessage
+      ? (DEFAULT_LAYOUT.rowHeight + DEFAULT_LAYOUT.rowGap) / 2
+      : Math.max(2, deactivateY - y);
 
     // Activation bar is centred on the lifeline (participant centre).
     const x = participant.x + participant.width / 2 - DEFAULT_LAYOUT.activationWidth / 2;
@@ -75,13 +81,11 @@ export function calculateActivations(
     if (!participant) continue;
 
     const activateRow = markerAnchors.get(activateId);
-    if (activateRow === undefined) continue;
-    const y = rowCenter(activateRow, rows, rowYPositions);
-
-    // Extend to the last row
-    const lastRow = Math.max(0, rows.length - 1);
-    const lastY = rowCenter(lastRow, rows, rowYPositions);
-    const height = Math.max(2, lastY - y);
+    const y =
+      activateRow === undefined
+        ? participant.y + participant.height
+        : rowCenter(activateRow, rows, rowYPositions);
+    const height = Math.max(2, lifelineBottom - y);
 
     // Centred on the lifeline (participant centre).
     const x = participant.x + participant.width / 2 - DEFAULT_LAYOUT.activationWidth / 2;
@@ -104,35 +108,42 @@ function rowCenter(row: number, rows: LayoutRow[], positions: number[]): number 
   return (positions[row] ?? 0) + (rows[row]?.estimatedHeight ?? DEFAULT_LAYOUT.rowHeight) / 2;
 }
 
-function calculateMarkerAnchors(
+function calculateParticipantMessageAnchors(
   events: NormalizedData['events'],
   rowByEventId: Map<string, number>
 ): Map<string, number> {
-  const ordered: string[] = [];
+  const anchors = new Map<string, number>();
+  const previousMessageByParticipant = new Map<string, number>();
   const walk = (items: NormalizedData['events']): void => {
     for (const event of items) {
-      ordered.push(event.id);
-      if (event.type === 'fragment') {
+      if (event.type === 'message') {
+        const row = rowByEventId.get(event.id);
+        if (row !== undefined) {
+          previousMessageByParticipant.set(event.from, row);
+          previousMessageByParticipant.set(event.to, row);
+        }
+      } else if (event.type === 'activate' || event.type === 'deactivate') {
+        const row = previousMessageByParticipant.get(event.participant);
+        if (row !== undefined) anchors.set(event.id, row);
+      } else if (event.type === 'fragment') {
         for (const branch of event.branches) walk(branch.events);
       }
     }
   };
   walk(events);
-
-  const anchors = new Map<string, number>();
-  for (let index = 0; index < ordered.length; index++) {
-    const id = ordered[index]!;
-    if (rowByEventId.has(id)) continue;
-    let anchor: number | undefined;
-    for (let before = index - 1; before >= 0 && anchor === undefined; before--) {
-      anchor = rowByEventId.get(ordered[before]!);
-    }
-    for (let after = index + 1; after < ordered.length && anchor === undefined; after++) {
-      anchor = rowByEventId.get(ordered[after]!);
-    }
-    if (anchor !== undefined) anchors.set(id, anchor);
-  }
   return anchors;
+}
+
+function calculateLifelineBottom(rows: LayoutRow[], positions: number[]): number {
+  if (rows.length === 0) {
+    return DEFAULT_LAYOUT.participantHeaderHeight + DEFAULT_LAYOUT.canvasPaddingBottom;
+  }
+  const lastRow = rows.length - 1;
+  return (
+    (positions[lastRow] ?? DEFAULT_LAYOUT.participantHeaderHeight) +
+    (rows[lastRow]?.estimatedHeight ?? DEFAULT_LAYOUT.rowHeight) +
+    DEFAULT_LAYOUT.canvasPaddingBottom
+  );
 }
 
 function findEvent(

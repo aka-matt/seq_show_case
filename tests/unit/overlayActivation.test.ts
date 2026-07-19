@@ -74,12 +74,13 @@ describe('Activation Layout', () => {
       );
     });
 
-    it('should anchor the activation to the adjacent message position', () => {
+    it('should use the lifeline top when there is no preceding participant message', () => {
       const normalized = normalize(dataWithActivations);
       const layout = layoutSequence(normalized);
 
       const activation = layout.activations[0]!;
-      expect(activation.y).toBeCloseTo(layout.messages[0]!.y, 0);
+      const participant = layout.participants.find(p => p.id === 'p1')!;
+      expect(activation.y).toBe(participant.y + participant.height);
     });
   });
 
@@ -134,6 +135,30 @@ describe('Activation Layout', () => {
 
       expect(layout.activations).toHaveLength(1);
       expect(layout.activations[0]!.deactivateEventId).toBe('');
+      expect(layout.activations[0]!.y + layout.activations[0]!.height).toBe(layout.bounds.height);
     });
+  });
+
+  it('uses only the preceding message involving the activation participant', () => {
+    const data: SequenceDiagramData = {
+      schemaVersion: '1.0',
+      participants: [
+        { id: 'p1', label: 'P1' },
+        { id: 'p2', label: 'P2' },
+        { id: 'p3', label: 'P3' },
+      ],
+      events: [
+        { id: 'p1-message', type: 'message', from: 'p1', to: 'p2', label: 'P1 message' },
+        { id: 'unrelated', type: 'message', from: 'p2', to: 'p3', label: 'Unrelated' },
+        { id: 'a1', type: 'activate', participant: 'p1' },
+        { id: 'd1', type: 'deactivate', participant: 'p1' },
+      ],
+    };
+    const layout = layoutSequence(normalize(data));
+    const activation = layout.activations[0]!;
+    const participantMessage = layout.messages.find(message => message.eventId === 'p1-message')!;
+
+    expect(activation.y).toBe(participantMessage.y);
+    expect(activation.height).toBe(27);
   });
 });

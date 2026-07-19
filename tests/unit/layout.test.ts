@@ -412,8 +412,8 @@ describe('Layout Engine', () => {
 
       expect(result.activations).toHaveLength(1);
       const activation = result.activations[0]!;
-      // Invisible markers anchor to the two surrounding message positions.
-      expect(activation.y).toBe(result.messages[0]!.y);
+      // With no preceding message, activation starts at the lifeline top.
+      expect(activation.y).toBe(result.participants[0]!.height);
       expect(activation.y + activation.height).toBe(result.messages[1]!.y);
     });
 
