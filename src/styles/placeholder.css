@@ -1,0 +1,26 @@
+/* Phase 0 placeholder styles - will be expanded in later phases */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:host {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 520px;
+  min-width: 240px;
+  contain: layout paint style;
+  color-scheme: light dark;
+}
+
+:host([hidden]) {
+  display: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
