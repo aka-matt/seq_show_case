@@ -31,11 +31,18 @@ export interface SequenceFlowProps {
   /** Callback when a node is clicked */
   onNodeClick?: (event: React.MouseEvent, node: { id: string }, nativeEvent?: MouseEvent) => void;
   /** Callback when an edge is clicked */
-  onEdgeClick?: (event: React.MouseEvent, edge: { id: string; source: string; target: string; label?: string; messageKind?: string }, nativeEvent?: MouseEvent) => void;
+  onEdgeClick?: (
+    event: React.MouseEvent,
+    edge: { id: string; source: string; target: string; label?: string; messageKind?: string },
+    nativeEvent?: MouseEvent
+  ) => void;
   /** Callback when the viewport changes */
   onViewportChange?: (viewport: { x: number; y: number; zoom: number }) => void;
   /** Callback when React Flow is ready with instance methods */
-  onReady?: (instance: { fitView: (options?: object) => void; setViewport: (viewport: object) => void }) => void;
+  onReady?: (instance: {
+    fitView: (options?: object) => void;
+    setViewport: (viewport: object) => void;
+  }) => void;
   /** Whether the diagram is in loading state */
   isLoading?: boolean;
   /** Configuration options */
@@ -69,24 +76,27 @@ function SequenceFlowComponent({
   const onReadyCalled = useRef(false);
 
   // Build dynamic config from props
-  const flowConfig = useMemo(() => ({
-    nodesDraggable: false,
-    nodesConnectable: false,
-    elementsSelectable: config.interactive ?? true,
-    edgesReconnectable: false,
-    panOnDrag: config.interactive ?? true,
-    zoomOnScroll: true,
-    zoomOnPinch: true,
-    zoomOnDoubleClick: false,
-    preventScrolling: true,
-    fitView: config.fitView ?? true,
-    // Slightly more padding so multi-participant diagrams don't feel cramped /
-    // oversized against the host viewport edges.
-    fitViewOptions: { padding: 0.15, includeHiddenNodes: false },
-    minZoom: config.minZoom ?? 0.1,
-    maxZoom: config.maxZoom ?? 2,
-    onlyRenderVisibleElements: true,
-  }), [config]);
+  const flowConfig = useMemo(
+    () => ({
+      nodesDraggable: false,
+      nodesConnectable: false,
+      elementsSelectable: config.interactive ?? true,
+      edgesReconnectable: false,
+      panOnDrag: config.interactive ?? true,
+      zoomOnScroll: true,
+      zoomOnPinch: true,
+      zoomOnDoubleClick: false,
+      preventScrolling: true,
+      fitView: config.fitView ?? true,
+      // Slightly more padding so multi-participant diagrams don't feel cramped /
+      // oversized against the host viewport edges.
+      fitViewOptions: { padding: 0.15, includeHiddenNodes: false },
+      minZoom: config.minZoom ?? 0.1,
+      maxZoom: config.maxZoom ?? 2,
+      onlyRenderVisibleElements: true,
+    }),
+    [config]
+  );
 
   // Convert layout result to nodes and edges
   const initialNodes = useMemo(() => {
@@ -120,16 +130,16 @@ function SequenceFlowComponent({
 
   // Handle node changes (selection, etc.)
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) => {
-      setNodes((nds) => applyNodeChanges(changes, nds) as typeof nds);
+    changes => {
+      setNodes(nds => applyNodeChanges(changes, nds) as typeof nds);
     },
     [setNodes]
   );
 
   // Handle edge changes (selection, etc.)
   const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => {
-      setEdges((eds) => applyEdgeChanges(changes, eds) as typeof eds);
+    changes => {
+      setEdges(eds => applyEdgeChanges(changes, eds) as typeof eds);
     },
     [setEdges]
   );
@@ -148,16 +158,20 @@ function SequenceFlowComponent({
   }, []);
 
   // Handle React Flow init
-  const onInit = useCallback((instance: ReactFlowInstance) => {
-    reactFlowRef.current = instance;
-    if (!onReadyCalled.current && onReady) {
-      onReadyCalled.current = true;
-      onReady({
-        fitView: (options?: object) => instance.fitView(options),
-        setViewport: (viewport: object) => instance.setViewport(viewport as { x: number; y: number; zoom: number }),
-      });
-    }
-  }, [onReady]);
+  const onInit = useCallback(
+    (instance: ReactFlowInstance) => {
+      reactFlowRef.current = instance;
+      if (!onReadyCalled.current && onReady) {
+        onReadyCalled.current = true;
+        onReady({
+          fitView: (options?: object) => instance.fitView(options),
+          setViewport: (viewport: object) =>
+            instance.setViewport(viewport as { x: number; y: number; zoom: number }),
+        });
+      }
+    },
+    [onReady]
+  );
 
   // Reset onReadyCalled when layoutResult changes
   useEffect(() => {
@@ -217,25 +231,30 @@ function SequenceFlowComponent({
       onInit={onInit}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
+      proOptions={{ hideAttribution: true }}
       {...flowConfig}
       style={{ background: config.showBackground ? 'var(--sd-canvas, #f9fafb)' : 'transparent' }}
     >
-      {config.showBackground && <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--sd-border, #e5e7eb)" />}
-      <SequenceOverlays layoutResult={layoutResult} />
-      {config.controls && (
-        <Controls
-          showZoom={true}
-          showFitView={true}
-          position="bottom-right"
+      {config.showBackground && (
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={16}
+          size={1}
+          color="var(--sd-border, #e5e7eb)"
         />
       )}
+      <SequenceOverlays layoutResult={layoutResult} />
+      {config.controls && <Controls showZoom={true} showFitView={true} position="bottom-left" />}
       {config.minimap && (
         <MiniMap
           nodeColor="var(--sd-surface, #ffffff)"
           nodeStrokeWidth={2}
           maskColor="rgba(0, 0, 0, 0.1)"
-          position="bottom-left"
-          style={{ background: 'var(--sd-surface, #ffffff)', border: '1px solid var(--sd-border, #e5e7eb)' }}
+          position="bottom-right"
+          style={{
+            background: 'var(--sd-surface, #ffffff)',
+            border: '1px solid var(--sd-border, #e5e7eb)',
+          }}
         />
       )}
     </ReactFlow>

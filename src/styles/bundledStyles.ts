@@ -2,8 +2,8 @@
 // The ?inline query loads the CSS as a string instead of injecting it
 import rfStyles from '@xyflow/react/dist/style.css?inline';
 
-// React Flow defaults are light-only. Keep its chrome on the same palette as
-// the diagram, including controls, minimap, and the attribution badge.
+// React Flow defaults are light-only. Keep its controls and minimap on the
+// same palette as the diagram.
 const themedReactFlowStyles = `
 .react-flow__controls {
   background: var(--sd-surface);
@@ -25,19 +25,6 @@ const themedReactFlowStyles = `
 .react-flow__controls-button svg,
 .react-flow__controls-button svg path {
   fill: currentColor;
-}
-
-.react-flow__attribution {
-  background: color-mix(in srgb, var(--sd-surface) 88%, transparent);
-  color: var(--sd-text-muted);
-}
-
-.react-flow__attribution a {
-  color: var(--sd-text-muted);
-}
-
-.react-flow__attribution a:hover {
-  color: var(--sd-accent);
 }
 
 .react-flow__minimap {
