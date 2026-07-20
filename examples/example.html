@@ -784,32 +784,37 @@
   </div>
 
   <!-- 5b: Features showcase (all-in-one) -->
-  <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem;">All Features in One Diagram</h3>
+  <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem;">Participant &amp; Message Presentation</h3>
+  <p class="section-desc">
+    Shows every participant <code>kind</code>/<code>icon</code>, real <code>subtitle</code> values,
+    numbered messages, and message tooltips. Hover a message line or label to see its tooltip.
+  </p>
   <div class="demo-card">
     <div class="diagram-wrap">
-      <sequence-diagram id="feature-demo-2" palette="forest" height="520px"><script type="application/json">
+      <sequence-diagram id="feature-demo-2" palette="forest" height="620px"><script type="application/json">
       {
         "schemaVersion": "1.0",
-        "title": "All Features Showcase",
+        "title": "Participant and Message Presentation",
+        "options": { "showParticipantIcons": true },
         "participants": [
-          { "id": "usr",  "label": "User",   "kind": "actor" },
-          { "id": "app",  "label": "App",    "kind": "service" },
-          { "id": "svc",  "label": "Service", "kind": "service" },
-          { "id": "db",   "label": "DB",     "kind": "database" }
+          { "id": "usr", "label": "Customer", "subtitle": "Web user", "kind": "actor", "icon": "person", "accent": "#2563eb" },
+          { "id": "web", "label": "Storefront", "subtitle": "Browser UI", "kind": "system", "icon": "browser" },
+          { "id": "api", "label": "Order API", "subtitle": "Core service", "kind": "service", "icon": "server" },
+          { "id": "db", "label": "Orders DB", "subtitle": "PostgreSQL", "kind": "database", "icon": "database" },
+          { "id": "jobs", "label": "Job Queue", "subtitle": "Async work", "kind": "queue", "icon": "queue", "accent": "#d97706" },
+          { "id": "pay", "label": "Payments", "subtitle": "External provider", "kind": "external", "icon": "cloud", "accent": "#7c3aed" }
         ],
         "events": [
-          { "id": "e0",  "type": "message",  "from": "usr", "to": "app",  "label": "Submit form",       "messageKind": "sync" },
-          { "id": "e1",  "type": "message",  "from": "app", "to": "svc",  "label": "Process (sync)",   "messageKind": "sync" },
-          { "id": "e2",  "type": "message",  "from": "app", "to": "svc",  "label": "Email (async)",    "messageKind": "async" },
-          { "id": "a1",  "type": "activate", "participant": "svc" },
-          { "id": "e3",  "type": "message",  "from": "svc", "to": "db",   "label": "INSERT",          "messageKind": "sync" },
-          { "id": "e4",  "type": "message",  "from": "db",  "to": "svc",  "label": "OK",              "messageKind": "return" },
-          { "id": "n1",  "type": "note",     "text": "This is a note spanning app and svc", "over": ["app", "svc"], "placement": "right", "tone": "info" },
-          { "id": "e5",  "type": "message",  "from": "svc", "to": "app",  "label": "Result",          "messageKind": "return" },
-          { "id": "dv1", "type": "divider",  "label": "--- processing complete ---" },
-          { "id": "e6",  "type": "message",  "from": "app", "to": "usr",  "label": "Done",            "messageKind": "sync" },
-          { "id": "sc1", "type": "message",  "from": "app", "to": "app",  "label": "Local validation", "messageKind": "sync" },
-          { "id": "d1",  "type": "deactivate", "participant": "svc" }
+          { "id": "e1", "type": "message", "from": "usr", "to": "web", "label": "Submit order", "number": 1, "tooltip": "Customer submits the checkout form", "messageKind": "sync" },
+          { "id": "e2", "type": "message", "from": "web", "to": "api", "label": "POST /orders", "number": "1.1", "tooltip": "Create a new order through the REST API", "messageKind": "sync" },
+          { "id": "a1", "type": "activate", "participant": "api" },
+          { "id": "e3", "type": "message", "from": "api", "to": "pay", "label": "Authorize", "number": "1.2", "tooltip": "Authorize the customer's payment method", "messageKind": "sync" },
+          { "id": "e4", "type": "message", "from": "pay", "to": "api", "label": "Approved", "number": "1.2.1", "tooltip": "Payment provider approved the authorization", "messageKind": "return", "status": "success" },
+          { "id": "e5", "type": "message", "from": "api", "to": "db", "label": "INSERT order", "number": "1.3", "tooltip": "Persist the order in PostgreSQL", "messageKind": "sync" },
+          { "id": "e6", "type": "message", "from": "api", "to": "jobs", "label": "Publish fulfillment", "number": "1.4", "tooltip": "Queue asynchronous fulfillment work", "messageKind": "async" },
+          { "id": "e7", "type": "message", "from": "api", "to": "web", "label": "Order created", "number": 2, "tooltip": "Return the newly created order", "messageKind": "return" },
+          { "id": "d1", "type": "deactivate", "participant": "api" },
+          { "id": "e8", "type": "message", "from": "web", "to": "usr", "label": "Show confirmation", "number": 3, "tooltip": "Display the confirmation page to the customer", "messageKind": "sync" }
         ]
       }
       </script></sequence-diagram>

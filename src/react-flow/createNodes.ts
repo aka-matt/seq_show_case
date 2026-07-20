@@ -110,6 +110,7 @@ export function createNodes(layoutResult: LayoutResult): Node<ParticipantLaneNod
         participant,
         handles,
         totalHeight,
+        showParticipantIcons: layoutResult.showParticipantIcons,
       };
 
       return {

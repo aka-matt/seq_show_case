@@ -83,6 +83,7 @@ export function layoutSequence(normalizedData: NormalizedData): LayoutResult {
     rowYPositions,
     participantMap,
     eventRowMap,
+    showParticipantIcons: normalizedData.options?.showParticipantIcons ?? true,
   };
 }
 
@@ -103,6 +104,10 @@ function calculateParticipantPositions(normalizedData: NormalizedData): LayoutPa
     participants.push({
       id: participant.id,
       label: participant.label,
+      ...(participant.subtitle !== undefined && { subtitle: participant.subtitle }),
+      ...(participant.kind !== undefined && { kind: participant.kind }),
+      ...(participant.icon !== undefined && { icon: participant.icon }),
+      ...(participant.accent !== undefined && { accent: participant.accent }),
       x,
       y: 0, // Participants are at the top
       width: participantWidth,
@@ -198,6 +203,8 @@ function calculateMessagesAndNotes(
           toX,
           y: y + (row?.estimatedHeight ?? DEFAULT_LAYOUT.rowHeight) / 2,
           label: event.label,
+          ...(event.number !== undefined && { number: event.number }),
+          ...(event.tooltip !== undefined && { tooltip: event.tooltip }),
           messageKind: event.messageKind,
           isSelfCall: event.isSelfCall,
           selfCallWidth: event.isSelfCall ? DEFAULT_LAYOUT.selfMessageWidth : 0,

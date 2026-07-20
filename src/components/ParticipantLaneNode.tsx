@@ -12,6 +12,7 @@ import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { LayoutParticipant } from '../layout/layout-types';
 import type { ParticipantHandle } from '../react-flow/createNodes';
+import { ParticipantIcon } from './ParticipantIcon';
 
 const PARTICIPANT_HEADER_HEIGHT = 68;
 const HANDLE_SIZE = 8;
@@ -45,13 +46,12 @@ export interface ParticipantLaneNodeData {
   handles: ParticipantHandle[];
   /** Total canvas height — used to size the node and extend the lifeline. */
   totalHeight: number;
+  showParticipantIcons: boolean;
 }
 
-function ParticipantLaneNodeComponent({
-  data,
-}: NodeProps): React.ReactElement {
+function ParticipantLaneNodeComponent({ data }: NodeProps): React.ReactElement {
   const typedData = data as ParticipantLaneNodeData;
-  const { participant, handles, totalHeight } = typedData;
+  const { participant, handles, totalHeight, showParticipantIcons } = typedData;
   const width = participant.width;
   const height = Math.max(totalHeight, PARTICIPANT_HEADER_HEIGHT);
 
@@ -71,7 +71,7 @@ function ParticipantLaneNodeComponent({
       }}
     >
       {/* Per-message handles pinned to the lifeline centre. */}
-      {handles.map((h) => (
+      {handles.map(h => (
         <Handle
           key={h.id}
           id={h.id}
@@ -107,27 +107,61 @@ function ParticipantLaneNodeComponent({
       >
         <div
           style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--sd-text, #111827)',
-            textAlign: 'center',
-            lineHeight: 1.3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            width: '100%',
             padding: '0 8px',
+            boxSizing: 'border-box',
           }}
         >
-          {participant.label}
-        </div>
-        {participant.index !== undefined && (
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--sd-text-muted, #6b7280)',
-              marginTop: 2,
-            }}
-          >
-            #{participant.index + 1}
+          {showParticipantIcons && (participant.icon || participant.kind) && (
+            <div
+              style={{
+                color: participant.accent ?? 'var(--sd-accent, #2563eb)',
+                display: 'flex',
+                flex: '0 0 auto',
+              }}
+            >
+              <ParticipantIcon
+                {...(participant.icon !== undefined && { icon: participant.icon })}
+                {...(participant.kind !== undefined && { kind: participant.kind })}
+              />
+            </div>
+          )}
+          <div style={{ minWidth: 0, textAlign: 'left' }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--sd-text, #111827)',
+                lineHeight: 1.3,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {participant.label}
+            </div>
+            {participant.subtitle && (
+              <div
+                data-participant-subtitle
+                style={{
+                  fontSize: 11,
+                  color: 'var(--sd-text-muted, #6b7280)',
+                  lineHeight: 1.3,
+                  marginTop: 2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {participant.subtitle}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Vertical dashed lifeline down the centre */}

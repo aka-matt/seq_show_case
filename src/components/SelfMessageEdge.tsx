@@ -7,15 +7,13 @@
  * are on the vertical dashed line, not the header box edge.
  */
 import React, { memo } from 'react';
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  type EdgeProps,
-} from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from '@xyflow/react';
 
 export interface SelfMessageEdgeData {
   [key: string]: unknown;
   label: string;
+  number?: string | number;
+  tooltip?: string;
   messageKind: 'sync' | 'async' | 'return';
   messageY: number;
   selfCallWidth: number;
@@ -30,7 +28,15 @@ function SelfMessageEdgeComponent({
   selected,
 }: EdgeProps): React.ReactElement {
   const typedData = data as SelfMessageEdgeData | undefined;
-  const { label, messageKind, messageY, selfCallWidth, status = 'normal' } = typedData ?? {};
+  const {
+    label,
+    number,
+    tooltip,
+    messageKind,
+    messageY,
+    selfCallWidth,
+    status = 'normal',
+  } = typedData ?? {};
   const msgY = messageY ?? sourceY;
   const loopWidth = selfCallWidth ?? 54;
   // Anchor at the measured handle (lifeline centre).
@@ -92,20 +98,25 @@ function SelfMessageEdgeComponent({
         </defs>
       </svg>
 
-      <BaseEdge
-        id={id}
-        path={loopPath}
-        style={{
-          stroke: lineColor,
-          strokeWidth: lineWidth,
-          strokeDasharray,
-        }}
-        markerEnd={`url(#${markerId})`}
-      />
+      <g aria-label={tooltip}>
+        {tooltip && <title>{tooltip}</title>}
+        <BaseEdge
+          id={id}
+          path={loopPath}
+          style={{
+            stroke: lineColor,
+            strokeWidth: lineWidth,
+            strokeDasharray,
+          }}
+          markerEnd={`url(#${markerId})`}
+        />
+      </g>
 
       {label && (
         <EdgeLabelRenderer>
           <div
+            title={tooltip}
+            aria-label={tooltip ?? label}
             style={{
               position: 'absolute',
               transform: `translate(0, -50%) translate(${x0 + loopWidth + 6}px, ${(y0 + y1) / 2}px)`,
@@ -120,6 +131,9 @@ function SelfMessageEdgeComponent({
               boxShadow: '0 1px 2px var(--sd-shadow, rgba(0,0,0,0.05))',
             }}
           >
+            {number !== undefined && (
+              <span style={{ fontWeight: 700, marginRight: 5 }}>{number}</span>
+            )}
             {label}
           </div>
         </EdgeLabelRenderer>

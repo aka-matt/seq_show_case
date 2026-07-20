@@ -1,3 +1,5 @@
+import type { ParticipantIcon, ParticipantKind } from '../model/public-types';
+
 /**
  * Layout types for the deterministic layout engine.
  * All types are React-independent — pure TypeScript only.
@@ -30,12 +32,7 @@ export interface LayoutToken {
 // ---------------------------------------------------------------------------
 
 export type LayoutRowKind =
-  | "message"
-  | "note"
-  | "divider"
-  | "fragment-header"
-  | "branch-header"
-  | "spacer";
+  'message' | 'note' | 'divider' | 'fragment-header' | 'branch-header' | 'spacer';
 
 export interface LayoutRow {
   /** Unique key for React rendering */
@@ -60,6 +57,10 @@ export interface LayoutRow {
 export interface LayoutParticipant {
   id: string;
   label: string;
+  subtitle?: string;
+  kind?: ParticipantKind;
+  icon?: ParticipantIcon;
+  accent?: string;
   /** X position of left edge */
   x: number;
   /** Y position of top edge */
@@ -84,13 +85,15 @@ export interface LayoutMessage {
   /** Y position of the message row */
   y: number;
   label: string;
-  messageKind: "sync" | "async" | "return";
+  number?: string | number;
+  tooltip?: string;
+  messageKind: 'sync' | 'async' | 'return';
   isSelfCall: boolean;
   /** Width of self-call loop */
   selfCallWidth: number;
   estimatedWidth: number;
   /** Message status for visual styling */
-  status?: "normal" | "success" | "warning" | "error" | "muted";
+  status?: 'normal' | 'success' | 'warning' | 'error' | 'muted';
 }
 
 // ---------------------------------------------------------------------------
@@ -100,12 +103,12 @@ export interface LayoutMessage {
 export interface LayoutNote {
   eventId: string;
   text: string;
-  placement: "left" | "right" | "center";
+  placement: 'left' | 'right' | 'center';
   x: number;
   y: number;
   width: number;
   height: number;
-  tone: "info" | "success" | "warning" | "error" | "neutral";
+  tone: 'info' | 'success' | 'warning' | 'error' | 'neutral';
   overParticipantIds: string[];
 }
 
@@ -129,7 +132,7 @@ export interface LayoutActivation {
 
 export interface LayoutFragment {
   fragmentEventId: string;
-  fragmentKind: "alt" | "opt" | "loop" | "par" | "critical" | "break";
+  fragmentKind: 'alt' | 'opt' | 'loop' | 'par' | 'critical' | 'break';
   label?: string;
   x: number;
   y: number;
@@ -192,4 +195,6 @@ export interface LayoutResult {
   participantMap: Map<string, LayoutParticipant>;
   /** Event ID → row index */
   eventRowMap: Map<string, number>;
+  /** Whether participant icons should be rendered. */
+  showParticipantIcons: boolean;
 }

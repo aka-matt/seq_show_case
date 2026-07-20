@@ -175,6 +175,34 @@ describe('Layout Engine', () => {
   });
 
   describe('layoutSequence', () => {
+    it('preserves participant presentation fields and icon visibility option', () => {
+      const result = layoutSequence(
+        normalize({
+          schemaVersion: '1.0',
+          participants: [
+            {
+              id: 'p1',
+              label: 'API',
+              subtitle: 'Production',
+              kind: 'service',
+              icon: 'cloud',
+              accent: '#ff0000',
+            },
+          ],
+          events: [],
+          options: { showParticipantIcons: false },
+        })
+      );
+
+      expect(result.participants[0]).toMatchObject({
+        subtitle: 'Production',
+        kind: 'service',
+        icon: 'cloud',
+        accent: '#ff0000',
+      });
+      expect(result.showParticipantIcons).toBe(false);
+    });
+
     it('should produce valid LayoutResult for two participants + one message', () => {
       const normalized = normalize(twoParticipantsOneMessage);
       const result = layoutSequence(normalized);
@@ -226,6 +254,32 @@ describe('Layout Engine', () => {
       const result = layoutSequence(normalized);
 
       expect(result.messages[0]!.isSelfCall).toBe(true);
+    });
+
+    it('preserves message number and tooltip presentation fields', () => {
+      const data: SequenceDiagramData = {
+        schemaVersion: '1.0',
+        participants: [
+          { id: 'p1', label: 'P1' },
+          { id: 'p2', label: 'P2' },
+        ],
+        events: [
+          {
+            id: 'm1',
+            type: 'message',
+            from: 'p1',
+            to: 'p2',
+            label: 'Request',
+            number: '1.2',
+            tooltip: 'Request details',
+          },
+        ],
+      };
+
+      expect(layoutSequence(normalize(data)).messages[0]).toMatchObject({
+        number: '1.2',
+        tooltip: 'Request details',
+      });
     });
 
     it('should calculate self-call extra space (toX > fromX)', () => {

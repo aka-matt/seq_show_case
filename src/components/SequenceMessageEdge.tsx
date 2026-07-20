@@ -8,16 +8,13 @@
  * line away from the lifeline anchors and look "floating".
  */
 import React, { memo } from 'react';
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  getStraightPath,
-  type EdgeProps,
-} from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getStraightPath, type EdgeProps } from '@xyflow/react';
 
 export interface SequenceMessageEdgeData {
   [key: string]: unknown;
   label: string;
+  number?: string | number;
+  tooltip?: string;
   messageKind: 'sync' | 'async' | 'return';
   arrowHeadType: 'arrowclosed' | 'arrow';
   messageY: number;
@@ -34,7 +31,15 @@ function SequenceMessageEdgeComponent({
   selected,
 }: EdgeProps): React.ReactElement {
   const typedData = data as SequenceMessageEdgeData | undefined;
-  const { label, messageKind, arrowHeadType, messageY, status = 'normal' } = typedData ?? {};
+  const {
+    label,
+    number,
+    tooltip,
+    messageKind,
+    arrowHeadType,
+    messageY,
+    status = 'normal',
+  } = typedData ?? {};
 
   // Prefer the layout-computed message Y so the line stays on the event row
   // even if handle measurement drifts by a pixel or two. Fall back to the
@@ -101,20 +106,25 @@ function SequenceMessageEdgeComponent({
         </defs>
       </svg>
 
-      <BaseEdge
-        id={id}
-        path={edgePath}
-        style={{
-          stroke: lineColor,
-          strokeWidth: lineWidth,
-          strokeDasharray,
-        }}
-        markerEnd={markerEnd}
-      />
+      <g aria-label={tooltip}>
+        {tooltip && <title>{tooltip}</title>}
+        <BaseEdge
+          id={id}
+          path={edgePath}
+          style={{
+            stroke: lineColor,
+            strokeWidth: lineWidth,
+            strokeDasharray,
+          }}
+          markerEnd={markerEnd}
+        />
+      </g>
 
       {label && (
         <EdgeLabelRenderer>
           <div
+            title={tooltip}
+            aria-label={tooltip ?? label}
             style={{
               position: 'absolute',
               transform: `translate(-50%, -100%) translate(${labelX}px, ${msgY - 4}px)`,
@@ -129,6 +139,9 @@ function SequenceMessageEdgeComponent({
               boxShadow: '0 1px 2px var(--sd-shadow, rgba(0,0,0,0.05))',
             }}
           >
+            {number !== undefined && (
+              <span style={{ fontWeight: 700, marginRight: 5 }}>{number}</span>
+            )}
             {label}
           </div>
         </EdgeLabelRenderer>

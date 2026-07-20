@@ -21,11 +21,13 @@ export function createEdges(layoutResult: LayoutResult): Edge[] {
     participantXMap.set(p.id, p.x + p.width / 2); // Use center X
   }
 
-  const edges: Edge[] = messages.map((message) => {
+  const edges: Edge[] = messages.map(message => {
     if (message.isSelfCall) {
       // Self-call edge
       const selfMessageData: SelfMessageEdgeData = {
         label: message.label,
+        ...(message.number !== undefined && { number: message.number }),
+        ...(message.tooltip !== undefined && { tooltip: message.tooltip }),
         messageKind: message.messageKind,
         messageY: message.y,
         selfCallWidth: message.selfCallWidth,
@@ -51,6 +53,8 @@ export function createEdges(layoutResult: LayoutResult): Edge[] {
 
     const messageData: SequenceMessageEdgeData = {
       label: message.label,
+      ...(message.number !== undefined && { number: message.number }),
+      ...(message.tooltip !== undefined && { tooltip: message.tooltip }),
       messageKind: message.messageKind,
       arrowHeadType: message.messageKind === 'sync' ? 'arrowclosed' : 'arrow',
       messageY: message.y,
